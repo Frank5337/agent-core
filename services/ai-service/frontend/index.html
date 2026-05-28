@@ -7,11 +7,12 @@
   <style>
     :root {
       --bg: #f3efe4;
-      --panel: rgba(255, 251, 242, 0.94);
+      --panel: rgba(255, 251, 242, 0.95);
       --ink: #1f2a24;
       --muted: #627067;
       --accent: #1d6b52;
       --accent-soft: rgba(29, 107, 82, 0.1);
+      --warm: #d39f34;
       --line: rgba(31, 42, 36, 0.1);
       --shadow: 0 24px 70px rgba(36, 49, 41, 0.12);
     }
@@ -27,6 +28,15 @@
         radial-gradient(circle at top left, rgba(211, 159, 52, 0.18), transparent 28%),
         radial-gradient(circle at top right, rgba(29, 107, 82, 0.14), transparent 30%),
         linear-gradient(180deg, #f8f4ea 0%, var(--bg) 100%);
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
     }
 
     .page {
@@ -47,9 +57,13 @@
     }
 
     .workspace {
-      grid-template-columns: minmax(460px, 0.9fr) minmax(600px, 1.2fr);
+      grid-template-columns: minmax(480px, 0.95fr) minmax(640px, 1.15fr);
       margin-top: 22px;
-      align-items: start;
+      align-items: stretch;
+    }
+
+    .workspace > .panel {
+      height: 100%;
     }
 
     .panel {
@@ -100,27 +114,65 @@
       line-height: 1.75;
     }
 
-    .meta {
+    .meta,
+    .mode-grid,
+    .detail-grid,
+    .pages-list,
+    .citations,
+    .question-box,
+    .suggestions {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
+    }
+
+    .meta {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       margin-top: 24px;
     }
 
     .meta-card,
+    .mode-card,
     .detail-item,
     .citation,
     .page-item {
       padding: 14px 16px;
       border-radius: 16px;
-      background: rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.74);
       border: 1px solid var(--line);
     }
 
-    .meta-card strong {
+    .meta-card strong,
+    .mode-card strong {
       display: block;
       margin-top: 6px;
-      font-size: 24px;
+      font-size: clamp(18px, 2vw, 24px);
+      line-height: 1.22;
+      letter-spacing: -0.02em;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .mode-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 20px;
+    }
+
+    .mode-card small,
+    .meta-card small {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mode-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(211, 159, 52, 0.16);
+      color: #8a5e00;
+      font-size: 12px;
+      font-weight: 700;
     }
 
     .ingest {
@@ -192,7 +244,9 @@
       transform: scale(1.15);
     }
 
-    .actions {
+    .actions,
+    .composer-actions,
+    .suggestions {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
@@ -223,18 +277,18 @@
       font-weight: 600;
     }
 
+    .ghost {
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--ink);
+      border: 1px solid rgba(31, 42, 36, 0.1);
+      box-shadow: none;
+      padding: 10px 14px;
+    }
+
     .status {
       min-height: 24px;
       font-size: 14px;
       color: var(--muted);
-    }
-
-    .detail-grid,
-    .pages-list,
-    .citations,
-    .question-box {
-      display: grid;
-      gap: 12px;
     }
 
     .citation-toggle {
@@ -248,15 +302,23 @@
       box-shadow: none;
     }
 
-    .citation-toggle:hover {
-      box-shadow: none;
-    }
-
     .citations {
       margin-top: 12px;
     }
 
+    /* 明确覆盖 display:grid，确保 hidden 状态下真的收起引用区。 */
+    .citations[hidden] {
+      display: none !important;
+    }
+
+    #generationModel {
+      font-size: clamp(17px, 1.7vw, 21px);
+      line-height: 1.18;
+    }
+
     .website-info {
+      display: flex;
+      flex-direction: column;
       min-height: 760px;
     }
 
@@ -270,9 +332,22 @@
       word-break: break-all;
     }
 
+    .page-item strong {
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+
+    .page-link {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
     .qa {
       position: sticky;
       top: 18px;
+      align-self: stretch;
       min-height: 760px;
       display: grid;
       grid-template-rows: auto auto minmax(420px, 1fr) auto;
@@ -319,11 +394,14 @@
     }
 
     .composer-actions {
-      display: flex;
-      align-items: center;
       justify-content: space-between;
+    }
+
+    .qa-controls {
+      display: grid;
       gap: 12px;
-      flex-wrap: wrap;
+      grid-template-columns: 140px 1fr;
+      align-items: end;
     }
 
     .hint {
@@ -337,7 +415,8 @@
 
     @media (max-width: 1180px) {
       .hero,
-      .workspace {
+      .workspace,
+      .mode-grid {
         grid-template-columns: 1fr;
       }
 
@@ -353,7 +432,8 @@
 
     @media (max-width: 760px) {
       .field-grid,
-      .meta {
+      .meta,
+      .qa-controls {
         grid-template-columns: 1fr;
       }
 
@@ -376,19 +456,33 @@
       <div class="panel intro">
         <div class="badge">Website RAG Studio</div>
         <h1>输入一个网站地址，<br>把它变成可问答的知识页</h1>
-        <p>这一版会抓取起始页面，并继续抓取同域下的多个页面，把正文切片后放进知识库。导入完成后，你就能直接针对这个网站提问。</p>
+        <p>这套页面会抓取网站内容、切片入库、做向量检索，再把命中的上下文交给模型回答。你可以把它当成一个轻量的网站 RAG 工作台。</p>
         <div class="meta">
           <div class="meta-card">
-            <span class="muted">步骤一</span>
+            <small>步骤一</small>
             <strong>抓取页面</strong>
           </div>
           <div class="meta-card">
-            <span class="muted">步骤二</span>
+            <small>步骤二</small>
             <strong>切片入库</strong>
           </div>
           <div class="meta-card">
-            <span class="muted">步骤三</span>
-            <strong>对话问答</strong>
+            <small>步骤三</small>
+            <strong>检索问答</strong>
+          </div>
+        </div>
+        <div class="mode-grid" id="modeGrid">
+          <div class="mode-card">
+            <small>回答引擎</small>
+            <strong id="llmMode">加载中</strong>
+          </div>
+          <div class="mode-card">
+            <small>向量模式</small>
+            <strong id="embeddingMode">加载中</strong>
+          </div>
+          <div class="mode-card">
+            <small>当前模型</small>
+            <strong id="generationModel">加载中</strong>
           </div>
         </div>
       </div>
@@ -397,7 +491,7 @@
         <div class="field-grid">
           <div class="field full">
             <label class="label" for="websiteUrl">网站地址</label>
-            <input id="websiteUrl" placeholder="https://example.com" />
+            <input id="websiteUrl" placeholder="example.com 或 https://example.com" />
           </div>
 
           <div class="field">
@@ -420,6 +514,7 @@
 
         <div class="actions">
           <button id="ingestButton" class="primary">抓取并入库</button>
+          <button id="refreshModeButton" class="ghost">刷新模式状态</button>
           <button id="clearButton" class="secondary">清空当前会话</button>
         </div>
 
@@ -430,7 +525,7 @@
     <section class="workspace">
       <div class="panel website-info">
         <h2>网站内容</h2>
-        <p class="muted">导入成功后，这里会显示当前知识库、抓取页数和页面列表。</p>
+        <p class="muted">导入成功后，这里会显示当前知识库、抓取页数和页面列表。页面链接可以直接点开核对原文。</p>
         <div id="details" class="detail-grid">
           <div class="detail-item">还没有导入网站内容。</div>
         </div>
@@ -440,7 +535,13 @@
       <div class="panel qa">
         <div class="qa-header">
           <h2>问答界面</h2>
-          <p class="muted">这里现在会更宽一些，适合连续追问。你可以直接问“这个网站主要介绍什么”“有哪些栏目”“某一页提到了什么”。</p>
+          <p class="muted">这里更适合连续追问。你可以直接问“这个网站主要介绍什么”“有哪些栏目”“某个页面提到了什么”。</p>
+        </div>
+
+        <div class="suggestions" id="suggestions">
+          <button class="ghost" data-question="总结这个网站的主要内容">总结这个网站的主要内容</button>
+          <button class="ghost" data-question="这个网站有哪些栏目？">这个网站有哪些栏目？</button>
+          <button class="ghost" data-question="这个网站最值得关注的页面有哪些？">这个网站最值得关注的页面有哪些？</button>
         </div>
 
         <div id="chatHistory" class="chat-history">
@@ -448,9 +549,18 @@
         </div>
 
         <div class="question-box">
-          <textarea id="questionInput" placeholder="例如：这个网站主要介绍了什么？"></textarea>
+          <div class="qa-controls">
+            <div class="field">
+              <label class="label" for="topKInput">检索条数 TopK</label>
+              <input id="topKInput" type="number" min="1" max="8" value="4" />
+            </div>
+            <div class="field">
+              <label class="label" for="questionInput">问题</label>
+              <textarea id="questionInput" placeholder="例如：这个网站主要介绍了什么？"></textarea>
+            </div>
+          </div>
           <div class="composer-actions">
-            <span class="hint">建议直接问具体一点，比如“这个网站有哪些内容栏目”。</span>
+            <span class="hint">建议尽量具体，比如“这个网站有没有美剧相关内容”“它提到了哪些技术主题”。</span>
             <button id="askButton" class="primary" disabled>开始提问</button>
           </div>
           <div id="askStatus" class="status"></div>
@@ -462,7 +572,8 @@
   <script>
     const state = {
       knowledgeBaseId: null,
-      pages: []
+      pages: [],
+      ragStatus: null
     };
 
     const websiteUrlInput = document.getElementById("websiteUrl");
@@ -470,25 +581,70 @@
     const maxPagesInput = document.getElementById("maxPages");
     const sameDomainOnlyInput = document.getElementById("sameDomainOnly");
     const ingestButton = document.getElementById("ingestButton");
+    const refreshModeButton = document.getElementById("refreshModeButton");
     const clearButton = document.getElementById("clearButton");
     const ingestStatus = document.getElementById("ingestStatus");
     const askButton = document.getElementById("askButton");
     const askStatus = document.getElementById("askStatus");
+    const topKInput = document.getElementById("topKInput");
     const questionInput = document.getElementById("questionInput");
     const details = document.getElementById("details");
     const pagesList = document.getElementById("pagesList");
     const chatHistory = document.getElementById("chatHistory");
+    const suggestions = document.getElementById("suggestions");
+    const llmMode = document.getElementById("llmMode");
+    const embeddingMode = document.getElementById("embeddingMode");
+    const generationModel = document.getElementById("generationModel");
 
     function setStatus(element, text) {
       element.textContent = text;
     }
 
+    function safeTopK() {
+      const value = Number(topKInput.value || 4);
+      return Math.min(8, Math.max(1, value));
+    }
+
+    function normalizeWebsiteUrlInput(rawValue) {
+      const value = (rawValue || "").trim();
+      if (!value) {
+        return value;
+      }
+      if (value.includes("://")) {
+        return value;
+      }
+      if (value.startsWith("//")) {
+        return `https:${value}`;
+      }
+      return `https://${value}`;
+    }
+
+    async function loadRagStatus() {
+      try {
+        const response = await fetch("/api/v1/system/rag-status");
+        const payload = await response.json();
+        state.ragStatus = payload;
+        llmMode.textContent = payload.llm_mode || "unknown";
+        embeddingMode.textContent = payload.embedding_mode || "unknown";
+        generationModel.textContent = payload.generation_model || "unknown";
+      } catch (error) {
+        llmMode.textContent = "unavailable";
+        embeddingMode.textContent = "unavailable";
+        generationModel.textContent = "unavailable";
+      }
+    }
+
     function renderDetails(payload) {
+      const ragMode = state.ragStatus
+        ? `<span class="mode-tag">${state.ragStatus.provider} / ${state.ragStatus.embedding_mode}</span>`
+        : "";
+
       details.innerHTML = `
         <div class="detail-item"><span class="muted">知识库</span><br><strong>${payload.knowledge_base_name}</strong></div>
         <div class="detail-item"><span class="muted">知识库 ID</span><br><code>${payload.knowledge_base_id}</code></div>
         <div class="detail-item"><span class="muted">抓取页面数</span><br><strong>${payload.document_count}</strong></div>
         <div class="detail-item"><span class="muted">总切片数</span><br><strong>${payload.total_chunk_count}</strong></div>
+        <div class="detail-item"><span class="muted">当前 RAG 模式</span><br>${ragMode || "<strong>未获取</strong>"}</div>
       `;
     }
 
@@ -502,7 +658,8 @@
         <div class="page-item">
           <strong>页面 ${index + 1}：</strong>${item.document_name}<br>
           <span class="muted">${item.source_url}</span><br>
-          <span class="muted">切片数：${item.chunk_count}</span>
+          <span class="muted">切片数：${item.chunk_count}</span><br>
+          <a class="page-link" href="${item.source_url}" target="_blank" rel="noreferrer">打开原页面</a>
         </div>
       `).join("");
     }
@@ -510,7 +667,11 @@
     function appendBubble(type, text, citations = []) {
       const wrapper = document.createElement("div");
       wrapper.className = `bubble ${type}`;
-      wrapper.textContent = text;
+
+      const body = document.createElement("div");
+      body.className = "bubble-body";
+      body.textContent = text;
+      wrapper.appendChild(body);
 
       if (citations.length > 0) {
         const toggleButton = document.createElement("button");
@@ -521,6 +682,7 @@
         const citationsEl = document.createElement("div");
         citationsEl.className = "citations";
         citationsEl.hidden = true;
+
         citations.forEach((item, index) => {
           const citation = document.createElement("div");
           citation.className = "citation";
@@ -528,16 +690,17 @@
             <strong>引用 ${index + 1}</strong><br>
             ${item.document_name} · chunk ${item.chunk_index} · score ${item.score}<br>
             ${item.snippet}<br>
-            <span class="muted">${item.source_url || ""}</span>
+            <a href="${item.source_url || "#"}" target="_blank" rel="noreferrer">${item.source_url || ""}</a>
           `;
           citationsEl.appendChild(citation);
         });
 
         toggleButton.addEventListener("click", () => {
-          citationsEl.hidden = !citationsEl.hidden;
-          toggleButton.textContent = citationsEl.hidden
-            ? `查看引用（${citations.length}）`
-            : `收起引用（${citations.length}）`;
+          const willShow = citationsEl.hidden;
+          citationsEl.hidden = !willShow;
+          toggleButton.textContent = willShow
+            ? `收起引用（${citations.length}）`
+            : `查看引用（${citations.length}）`;
         });
 
         wrapper.appendChild(toggleButton);
@@ -548,8 +711,29 @@
       chatHistory.scrollTop = chatHistory.scrollHeight;
     }
 
+    function resetChat() {
+      chatHistory.innerHTML = '<div class="bubble answer"><div class="bubble-body">先在左侧输入网站地址并完成导入，然后这里就可以开始问答。</div></div>';
+    }
+
+    suggestions.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-question]");
+      if (!button) {
+        return;
+      }
+      questionInput.value = button.dataset.question || "";
+      questionInput.focus();
+    });
+
+    refreshModeButton.addEventListener("click", async () => {
+      refreshModeButton.disabled = true;
+      setStatus(ingestStatus, "正在刷新当前 RAG 模式状态...");
+      await loadRagStatus();
+      setStatus(ingestStatus, "RAG 模式状态已刷新。");
+      refreshModeButton.disabled = false;
+    });
+
     ingestButton.addEventListener("click", async () => {
-      const url = websiteUrlInput.value.trim();
+      const url = normalizeWebsiteUrlInput(websiteUrlInput.value);
       const knowledgeBaseName = kbNameInput.value.trim();
       const maxPages = Number(maxPagesInput.value || 5);
 
@@ -557,6 +741,8 @@
         setStatus(ingestStatus, "请先输入网站地址。");
         return;
       }
+
+      websiteUrlInput.value = url;
 
       ingestButton.disabled = true;
       setStatus(ingestStatus, "正在抓取网站并构建知识库，请稍等...");
@@ -578,11 +764,13 @@
           throw new Error(payload.detail || "导入失败");
         }
 
+        await loadRagStatus();
         state.knowledgeBaseId = payload.knowledge_base_id;
         state.pages = payload.pages || [];
         renderDetails(payload);
         renderPages(state.pages);
         askButton.disabled = false;
+        resetChat();
 
         setStatus(
           ingestStatus,
@@ -621,7 +809,7 @@
           body: JSON.stringify({
             knowledge_base_id: state.knowledgeBaseId,
             question,
-            top_k: 3
+            top_k: safeTopK()
           })
         });
         const payload = await response.json();
@@ -646,6 +834,7 @@
       websiteUrlInput.value = "";
       kbNameInput.value = "";
       maxPagesInput.value = "5";
+      topKInput.value = "4";
       sameDomainOnlyInput.checked = true;
       questionInput.value = "";
       askButton.disabled = true;
@@ -653,8 +842,10 @@
       setStatus(askStatus, "");
       details.innerHTML = '<div class="detail-item">还没有导入网站内容。</div>';
       pagesList.innerHTML = "";
-      chatHistory.innerHTML = '<div class="bubble answer">先在左侧输入网站地址并完成导入，然后这里就可以开始问答。</div>';
+      resetChat();
     });
+
+    loadRagStatus();
   </script>
 </body>
 </html>

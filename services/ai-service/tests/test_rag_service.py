@@ -127,3 +127,37 @@ def test_ingest_website_rebuilds_knowledge_base(monkeypatch) -> None:
     assert len(chunks) >= 1
     assert documents[0].name == "Fresh Page"
     assert all(chunk.embedding_status == "ready" for chunk in chunks)
+
+
+def test_ingest_website_accepts_url_without_scheme(monkeypatch) -> None:
+    session = build_session()
+
+    captured: dict[str, str] = {}
+
+    def fake_crawl(url, max_pages, same_domain_only):
+        captured["url"] = url
+        return [
+            WebsiteContent(
+                url="https://frank5337.github.io/",
+                title="Franklin's World",
+                text="Personal notes about shows and Java. " * 12,
+                links=[],
+            )
+        ]
+
+    monkeypatch.setattr("app.services.rag_service.website_service.crawl", fake_crawl)
+
+    response = rag_service.ingest_website(
+        session,
+        WebsiteIngestRequest(
+            url="frank5337.github.io",
+            knowledge_base_name=None,
+            chunk_size=120,
+            chunk_overlap=20,
+            max_pages=1,
+            same_domain_only=True,
+        ),
+    )
+
+    assert captured["url"] == "https://frank5337.github.io/"
+    assert response.knowledge_base_name == "frank5337.github.io"

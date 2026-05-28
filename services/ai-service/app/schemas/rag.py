@@ -1,10 +1,11 @@
 from uuid import UUID
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 
 class WebsiteIngestRequest(BaseModel):
-    url: HttpUrl
+    # 允许用户直接输入域名，协议统一在服务层自动补齐。
+    url: str = Field(min_length=1, max_length=2048)
     knowledge_base_name: str | None = Field(default=None, max_length=100)
     chunk_size: int = Field(default=800, ge=100, le=5000)
     chunk_overlap: int = Field(default=100, ge=0, le=1000)

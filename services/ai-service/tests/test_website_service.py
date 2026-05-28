@@ -1,6 +1,12 @@
 from app.services.website_service import WebsiteContent, WebsiteService
 
 
+def test_normalize_url_adds_https_when_scheme_is_missing() -> None:
+    service = WebsiteService()
+
+    assert service._normalize_url("frank5337.github.io") == "https://frank5337.github.io/"
+
+
 def test_crawl_respects_same_domain_and_max_pages(monkeypatch) -> None:
     service = WebsiteService()
 

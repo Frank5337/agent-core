@@ -26,12 +26,13 @@ from app.services.website_service import WebsiteContent, website_service
 
 class RagService:
     def ingest_website(self, db: Session, payload: WebsiteIngestRequest) -> WebsiteIngestResponse:
+        normalized_url = website_service._normalize_url(payload.url)
         contents = website_service.crawl(
-            str(payload.url),
+            normalized_url,
             max_pages=payload.max_pages,
             same_domain_only=payload.same_domain_only,
         )
-        knowledge_base_name = payload.knowledge_base_name or self._default_knowledge_base_name(str(payload.url))
+        knowledge_base_name = payload.knowledge_base_name or self._default_knowledge_base_name(normalized_url)
         knowledge_base = self._get_or_create_knowledge_base(db, knowledge_base_name)
         self._reset_knowledge_base_documents(db, str(knowledge_base.id))
 

@@ -179,9 +179,21 @@ class WebsiteService:
         return normalized
 
     def _normalize_url(self, url: str) -> str:
-        parsed = urlparse(url)
+        raw_url = url.strip()
+        if not raw_url:
+            raise ValueError("url is empty")
+
+        # 支持用户直接输入 frank5337.github.io 这样的裸域名。
+        if "://" not in raw_url and not raw_url.startswith("//"):
+            raw_url = f"https://{raw_url}"
+        elif raw_url.startswith("//"):
+            raw_url = f"https:{raw_url}"
+
+        parsed = urlparse(raw_url)
         if parsed.scheme not in {"http", "https"}:
             raise ValueError("url must start with http or https")
+        if not parsed.netloc:
+            raise ValueError("url host is invalid")
 
         path = parsed.path or "/"
         cleaned = parsed._replace(path=path, fragment="")
