@@ -34,14 +34,14 @@ python -m venv .venv
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
 copy .env.example .env
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8002
 ```
 
 Default local values:
 
-- Base URL: `http://localhost:8000`
+- Base URL: `http://localhost:8002`
 - Database: `sqlite:///./ai-service.db`
-- Frontend demo: `http://localhost:8000`
+- Frontend demo: `http://localhost:8002`
 
 Run tests:
 
@@ -62,7 +62,8 @@ Default local values:
 
 - Base URL: `http://localhost:8080`
 - Database: in-memory `H2`
-- Downstream AI service: `http://localhost:8000`
+- Downstream AI service default: `http://localhost:8002`
+- Web console: `http://localhost:8080`
 
 Run tests:
 
@@ -75,15 +76,16 @@ mvn test
 1. Start `ai-service`.
 2. Start `platform-service`.
 3. Create a tenant in `platform-service`.
-4. Create a provider in `ai-service`.
-5. Create a knowledge base in `ai-service`.
-6. Create an application in `platform-service`.
-7. Optionally create a document in `ai-service`, call the parse endpoint, or create chunks manually.
-8. Call `POST /api/v1/applications/{applicationId}/chat`.
+4. Create a platform user in `platform-service`.
+5. Create a provider in `ai-service`.
+6. Create a knowledge base in `ai-service`.
+7. Create an application in `platform-service`.
+8. Publish the application if you want to test release flow.
+9. Call `POST /api/v1/applications/{applicationId}/chat`.
 
 ## Website RAG Demo
 
-Open `http://localhost:8000` after starting `ai-service`.
+Open `http://localhost:8002` after starting `ai-service`.
 
 1. Paste a website URL.
 2. Optionally set the knowledge base name and max page count.
@@ -108,4 +110,14 @@ pip install -r requirements-dev.txt
 
 ### platform-service cannot call ai-service
 
-Make sure `ai-service` is running on `http://localhost:8000`.
+Make sure `ai-service` is running on `8002` or update:
+
+- [application.yml](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/platform-service/src/main/resources/application.yml:1)
+
+### website crawl fails
+
+Check these items first:
+
+- Whether your local proxy is configured correctly
+- Whether `ai-service` can access external websites
+- Whether the target website blocks automated requests

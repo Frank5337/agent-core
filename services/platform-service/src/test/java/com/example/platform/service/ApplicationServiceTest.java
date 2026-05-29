@@ -2,17 +2,20 @@ package com.example.platform.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.platform.entity.ApplicationEntity;
+import com.example.platform.entity.PlatformUserEntity;
 import com.example.platform.entity.TenantEntity;
 import com.example.platform.model.AiChatCompletionResponse;
 import com.example.platform.model.ApplicationChatRequest;
 import com.example.platform.model.ApplicationChatResponse;
 import com.example.platform.model.ApplicationCreateRequest;
+import com.example.platform.model.ApplicationPublishRequest;
 import com.example.platform.model.ChatMessageRequest;
 import com.example.platform.repository.ApplicationRepository;
 import java.time.Instant;
@@ -39,12 +42,17 @@ class ApplicationServiceTest {
     @Mock
     private AiGatewayClient aiGatewayClient;
 
+    @Mock
+    private AuditLogService auditLogService;
+
+    @Mock
+    private PlatformUserService platformUserService;
+
     @InjectMocks
     private ApplicationService applicationService;
 
     @Test
     void createApplicationPersistsTenantRelationship() {
-        // 重点验证创建时是否把租户关系和系统提示词带进持久化结果。
         UUID tenantId = UUID.randomUUID();
         TenantEntity tenant = new TenantEntity();
         tenant.setId(tenantId);
@@ -76,12 +84,73 @@ class ApplicationServiceTest {
         assertEquals("be concise", response.systemPrompt());
         assertEquals(tenantId, response.tenantId());
         assertEquals("team-a", response.tenantName());
+        assertEquals("draft", response.status());
+        assertNull(response.publishedAt());
         assertNotNull(response.id());
+        verify(auditLogService).record(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()
+        );
+    }
+
+    @Test
+    void publishApplicationUpdatesStatusAndActor() {
+        UUID tenantId = UUID.randomUUID();
+        UUID applicationId = UUID.randomUUID();
+        UUID actorUserId = UUID.randomUUID();
+
+        TenantEntity tenant = new TenantEntity();
+        tenant.setId(tenantId);
+        tenant.setName("team-a");
+        tenant.setCreatedAt(Instant.now());
+
+        PlatformUserEntity actor = new PlatformUserEntity();
+        actor.setId(actorUserId);
+        actor.setTenant(tenant);
+        actor.setDisplayName("Alice");
+        actor.setEmail("alice@example.com");
+        actor.setRoleCode("APP_OPERATOR");
+        actor.setStatus("active");
+        actor.setCreatedAt(Instant.now());
+
+        ApplicationEntity application = new ApplicationEntity();
+        application.setId(applicationId);
+        application.setTenant(tenant);
+        application.setName("ops-assistant");
+        application.setStatus("draft");
+        application.setCreatedAt(Instant.now());
+
+        when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(platformUserService.requireUser(actorUserId)).thenReturn(actor);
+        when(applicationRepository.save(any(ApplicationEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = applicationService.publishApplication(
+            applicationId,
+            new ApplicationPublishRequest(actorUserId, "release to pilot")
+        );
+
+        assertEquals("published", response.status());
+        assertNotNull(response.publishedAt());
+        verify(auditLogService).record(
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()
+        );
     }
 
     @Test
     void chatDelegatesToAiGateway() {
-        // 平台对话测试关注“是否正确组装并转发 ai 请求”。
         UUID tenantId = UUID.randomUUID();
         UUID applicationId = UUID.randomUUID();
         UUID providerId = UUID.randomUUID();
@@ -102,6 +171,7 @@ class ApplicationServiceTest {
         application.setSystemPrompt("be concise");
         application.setDefaultProviderId(providerId);
         application.setDefaultKnowledgeBaseId(knowledgeBaseId);
+        application.setStatus("published");
         application.setCreatedAt(Instant.now());
 
         when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));

@@ -34,7 +34,7 @@ class ApplicationControllerTest {
     void listApplicationsSupportsFilters() throws Exception {
         UUID tenantId = UUID.randomUUID();
 
-        when(applicationService.listApplications(tenantId, "ops")).thenReturn(
+        when(applicationService.listApplications(tenantId, "ops", "published")).thenReturn(
             List.of(
                 new ApplicationResponse(
                     UUID.randomUUID(),
@@ -48,14 +48,22 @@ class ApplicationControllerTest {
                     null,
                     null,
                     null,
+                    "published",
+                    Instant.now(),
                     Instant.now()
                 )
             )
         );
 
-        mockMvc.perform(get("/api/v1/applications").param("tenantId", tenantId.toString()).param("q", "ops"))
+        mockMvc.perform(
+                get("/api/v1/applications")
+                    .param("tenantId", tenantId.toString())
+                    .param("q", "ops")
+                    .param("status", "published")
+            )
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[0].name").value("ops-assistant"));
+            .andExpect(jsonPath("$[0].name").value("ops-assistant"))
+            .andExpect(jsonPath("$[0].status").value("published"));
     }
 
     @Test
@@ -75,6 +83,8 @@ class ApplicationControllerTest {
                 null,
                 null,
                 null,
+                null,
+                "draft",
                 null,
                 Instant.now()
             )
@@ -104,6 +114,8 @@ class ApplicationControllerTest {
                 null,
                 null,
                 null,
+                "draft",
+                null,
                 Instant.now()
             )
         );
@@ -123,7 +135,45 @@ class ApplicationControllerTest {
             )
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.name").value("ops-assistant"))
-            .andExpect(jsonPath("$.tenantId").value(tenantId.toString()));
+            .andExpect(jsonPath("$.tenantId").value(tenantId.toString()))
+            .andExpect(jsonPath("$.status").value("draft"));
+    }
+
+    @Test
+    void publishApplicationReturnsPublishedStatus() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID applicationId = UUID.randomUUID();
+
+        when(applicationService.publishApplication(any(), any())).thenReturn(
+            new ApplicationResponse(
+                applicationId,
+                tenantId,
+                "team-a",
+                "ops-assistant",
+                "for operations",
+                "chatbot",
+                "be concise",
+                null,
+                null,
+                null,
+                null,
+                "published",
+                Instant.now(),
+                Instant.now()
+            )
+        );
+
+        mockMvc.perform(
+                post("/api/v1/applications/{applicationId}/publish", applicationId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                          "note": "ready for release"
+                        }
+                        """)
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("published"));
     }
 
     @Test

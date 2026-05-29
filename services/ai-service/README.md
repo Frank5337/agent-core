@@ -24,13 +24,21 @@ copy .env.example .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-After startup, open `http://localhost:8000` to use the website-to-RAG demo page.
+For the current standalone website RAG demo, we recommend:
+
+```bash
+uvicorn app.main:app --reload --port 8002
+```
+
+After startup, open `http://localhost:8002` to use the website-to-RAG demo page.
 The page supports:
 
 - entering a website URL
 - crawling multiple pages from the same domain
 - ingesting page content into a knowledge base
 - asking questions against the imported content
+- multi-turn follow-up questions
+- collapsible citations
 
 ## Environment
 

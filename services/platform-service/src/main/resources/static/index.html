@@ -1,0 +1,1400 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 中台控制台</title>
+  <style>
+    :root {
+      --bg: #f2efe8;
+      --surface: rgba(255, 251, 243, 0.94);
+      --surface-strong: #fffdf8;
+      --ink: #17231d;
+      --muted: #66746d;
+      --line: rgba(23, 35, 29, 0.1);
+      --brand: #155f49;
+      --brand-strong: #0f4d3b;
+      --accent: #bd7a28;
+      --draft: #8e6420;
+      --published: #1b6b53;
+      --danger: #b05640;
+      --shadow: 0 26px 60px rgba(28, 44, 37, 0.12);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Trebuchet MS", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(189, 122, 40, 0.17), transparent 25%),
+        radial-gradient(circle at 100% 0%, rgba(21, 95, 73, 0.18), transparent 30%),
+        linear-gradient(180deg, #faf6ef 0%, var(--bg) 100%);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .page {
+      max-width: 1540px;
+      margin: 0 auto;
+      padding: 26px 18px 48px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .hero-card,
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-card {
+      padding: 28px;
+    }
+
+    .hero-card h1 {
+      margin: 0 0 14px;
+      font-family: Georgia, "Times New Roman", "Songti SC", serif;
+      font-size: clamp(36px, 4.6vw, 64px);
+      line-height: 0.96;
+      letter-spacing: -0.05em;
+    }
+
+    .hero-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.78;
+      font-size: 15px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(21, 95, 73, 0.11);
+      color: var(--brand);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .hero-meta .meta {
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .meta small,
+    .stat small,
+    .field label,
+    .section-subtitle {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .meta strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 26px;
+      line-height: 1.05;
+    }
+
+    .hero-side {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 20px;
+    }
+
+    .status-card,
+    .quick-card {
+      padding: 22px;
+    }
+
+    .status-card h2,
+    .quick-card h2,
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .status-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px dashed rgba(23, 35, 29, 0.12);
+    }
+
+    .status-line:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 32px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(21, 95, 73, 0.1);
+      color: var(--brand);
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(380px, 0.95fr) minmax(0, 1.45fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .column {
+      display: grid;
+      gap: 20px;
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .section-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat {
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid rgba(23, 35, 29, 0.14);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 14px 15px;
+      outline: none;
+      transition: border-color .2s ease, transform .2s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(21, 95, 73, 0.42);
+      transform: translateY(-1px);
+    }
+
+    textarea {
+      min-height: 112px;
+      resize: vertical;
+      line-height: 1.68;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 16px;
+      padding: 13px 18px;
+      font-weight: 700;
+      transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
+      color: #fff;
+      box-shadow: 0 18px 36px rgba(21, 95, 73, 0.23);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--ink);
+      border: 1px solid rgba(23, 35, 29, 0.1);
+    }
+
+    .btn-soft {
+      background: rgba(21, 95, 73, 0.08);
+      color: var(--brand);
+      border: 1px solid rgba(21, 95, 73, 0.15);
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .list {
+      display: grid;
+      gap: 12px;
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .list-item {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .list-item h3,
+    .app-card h3 {
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    .list-item p,
+    .app-card p,
+    .audit-line,
+    .chat-output p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status-draft {
+      background: rgba(189, 122, 40, 0.12);
+      color: var(--draft);
+    }
+
+    .status-published {
+      background: rgba(27, 107, 83, 0.13);
+      color: var(--published);
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .role-card {
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .role-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    .permissions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .permissions span {
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(23, 35, 29, 0.06);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .app-grid {
+      display: grid;
+      gap: 14px;
+      max-height: 540px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .app-card {
+      padding: 18px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: var(--surface-strong);
+      box-shadow: 0 16px 32px rgba(20, 30, 24, 0.06);
+    }
+
+    .app-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .app-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 12px;
+    }
+
+    .tag {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(23, 35, 29, 0.06);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar .field {
+      min-width: 180px;
+      flex: 1;
+    }
+
+    .chat-shell {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .chat-log {
+      min-height: 280px;
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .chat-bubble {
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .chat-bubble.user {
+      background: rgba(21, 95, 73, 0.1);
+    }
+
+    .chat-bubble strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .chat-output {
+      padding: 18px;
+      min-height: 280px;
+      border-radius: 20px;
+      border: 1px dashed rgba(23, 35, 29, 0.15);
+      background: rgba(255, 255, 255, 0.56);
+    }
+
+    .audit-list {
+      display: grid;
+      gap: 10px;
+      max-height: 320px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .audit-item {
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.76);
+    }
+
+    .audit-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .empty {
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px dashed rgba(23, 35, 29, 0.16);
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.46);
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    .status-text {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .danger {
+      color: var(--danger);
+    }
+
+    @media (max-width: 1280px) {
+      .layout,
+      .hero,
+      .chat-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-side {
+        grid-template-rows: auto;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .stats,
+      .hero-meta,
+      .grid-2,
+      .grid-3,
+      .role-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page {
+        padding-inline: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">AI Middle Platform Console</div>
+        <h1>Java 平台层<br>最小管理台</h1>
+        <p>这版页面直接跑在 <code>platform-service</code> 上，重点覆盖租户、用户、角色、应用发布、审计和应用级聊天联调。它不是完整后台，但已经能把平台层最关键的最小闭环跑起来。</p>
+        <div class="hero-meta">
+          <div class="meta">
+            <small>平台端口</small>
+            <strong>8080</strong>
+          </div>
+          <div class="meta">
+            <small>下游 AI</small>
+            <strong>8002</strong>
+          </div>
+          <div class="meta">
+            <small>当前定位</small>
+            <strong>MVP</strong>
+          </div>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="hero-card status-card">
+          <h2>运行状态</h2>
+          <div class="status-line">
+            <div>
+              <small>Platform Health</small>
+              <div id="platformHealthLabel">待检查</div>
+            </div>
+            <span class="chip" id="platformHealthChip">未连接</span>
+          </div>
+          <div class="status-line">
+            <div>
+              <small>Provider Catalog</small>
+              <div id="providerHealthLabel">待加载</div>
+            </div>
+            <span class="chip" id="providerHealthChip">0</span>
+          </div>
+          <div class="status-line">
+            <div>
+              <small>Knowledge Base Catalog</small>
+              <div id="knowledgeHealthLabel">待加载</div>
+            </div>
+            <span class="chip" id="knowledgeHealthChip">0</span>
+          </div>
+        </div>
+        <div class="hero-card quick-card">
+          <h2>快速操作</h2>
+          <p>先建租户，再建平台用户和应用；应用创建完成后可以直接在页面里发布，并用右下角聊天联调区域验证它是否能正确转发到 AI 服务。</p>
+          <div class="actions">
+            <button class="btn btn-primary" id="refreshAllButton">刷新全部数据</button>
+            <button class="btn btn-secondary" id="scrollToAppsButton">去应用工作台</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <div>
+          <h2>平台总览</h2>
+          <p>这一层只看平台元数据和治理入口，不直接承载 RAG 页面。</p>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><small>租户数</small><strong id="tenantCount">0</strong></div>
+        <div class="stat"><small>平台用户数</small><strong id="userCount">0</strong></div>
+        <div class="stat"><small>应用数</small><strong id="applicationCount">0</strong></div>
+        <div class="stat"><small>已发布应用</small><strong id="publishedCount">0</strong></div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="column">
+        <div class="panel">
+          <div class="section-title">
+            <div>
+              <h2>租户</h2>
+              <p>先维护租户，再让用户和应用归属到对应租户。</p>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="tenantNameInput">租户名称</label>
+              <input id="tenantNameInput" placeholder="例如：零售事业部">
+            </div>
+            <div class="field">
+              <label for="tenantDescriptionInput">租户描述</label>
+              <input id="tenantDescriptionInput" placeholder="描述该租户负责的业务域">
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="createTenantButton">创建租户</button>
+          </div>
+          <div class="status-text" id="tenantStatus"></div>
+          <div class="stack" style="margin-top:16px;">
+            <div class="field">
+              <label for="tenantQueryInput">搜索租户</label>
+              <input id="tenantQueryInput" placeholder="按租户名称过滤">
+            </div>
+            <div class="list" id="tenantList"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-title">
+            <div>
+              <h2>角色与平台用户</h2>
+              <p>这版先提供固定角色目录，便于最小原型先跑通管理链路。</p>
+            </div>
+          </div>
+          <div class="role-grid" id="roleGrid"></div>
+          <div class="grid-2" style="margin-top:18px;">
+            <div class="field">
+              <label for="userTenantSelect">所属租户</label>
+              <select id="userTenantSelect"></select>
+            </div>
+            <div class="field">
+              <label for="userRoleSelect">角色</label>
+              <select id="userRoleSelect"></select>
+            </div>
+            <div class="field">
+              <label for="userDisplayNameInput">姓名</label>
+              <input id="userDisplayNameInput" placeholder="例如：Alice">
+            </div>
+            <div class="field">
+              <label for="userEmailInput">邮箱</label>
+              <input id="userEmailInput" placeholder="alice@example.com">
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="createUserButton">创建平台用户</button>
+          </div>
+          <div class="status-text" id="userStatus"></div>
+          <div class="stack" style="margin-top:16px;">
+            <div class="grid-2">
+              <div class="field">
+                <label for="userQueryInput">搜索用户</label>
+                <input id="userQueryInput" placeholder="姓名或邮箱">
+              </div>
+              <div class="field">
+                <label for="userFilterTenantSelect">按租户过滤</label>
+                <select id="userFilterTenantSelect"></select>
+              </div>
+            </div>
+            <div class="list" id="userList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="column">
+        <div class="panel" id="appsPanel">
+          <div class="section-title">
+            <div>
+              <h2>应用工作台</h2>
+              <p>应用可以绑定默认 provider、知识库和 system prompt；创建后可直接发布或退回草稿。</p>
+            </div>
+          </div>
+          <div class="grid-3">
+            <div class="field">
+              <label for="appTenantSelect">所属租户</label>
+              <select id="appTenantSelect"></select>
+            </div>
+            <div class="field">
+              <label for="appProviderSelect">默认 Provider</label>
+              <select id="appProviderSelect"></select>
+            </div>
+            <div class="field">
+              <label for="appKnowledgeBaseSelect">默认知识库</label>
+              <select id="appKnowledgeBaseSelect"></select>
+            </div>
+          </div>
+          <div class="grid-2" style="margin-top:14px;">
+            <div class="field">
+              <label for="appNameInput">应用名称</label>
+              <input id="appNameInput" placeholder="例如：采购助手">
+            </div>
+            <div class="field">
+              <label for="appTypeInput">应用类型</label>
+              <input id="appTypeInput" value="chatbot">
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+              <label for="appDescriptionInput">应用描述</label>
+              <input id="appDescriptionInput" placeholder="描述这个应用面向谁、解决什么问题">
+            </div>
+            <div class="field" style="grid-column:1 / -1;">
+              <label for="appPromptInput">System Prompt</label>
+              <textarea id="appPromptInput" placeholder="例如：你是采购域的内部 Copilot，请优先给出可执行建议。"></textarea>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="createAppButton">创建应用</button>
+            <span class="status-text" id="appStatus"></span>
+          </div>
+
+          <div class="toolbar" style="margin-top:22px;">
+            <div class="field">
+              <label for="appQueryInput">搜索应用</label>
+              <input id="appQueryInput" placeholder="按名称过滤">
+            </div>
+            <div class="field">
+              <label for="appFilterTenantSelect">按租户过滤</label>
+              <select id="appFilterTenantSelect"></select>
+            </div>
+            <div class="field">
+              <label for="appFilterStatusSelect">发布状态</label>
+              <select id="appFilterStatusSelect">
+                <option value="">全部状态</option>
+                <option value="draft">草稿</option>
+                <option value="published">已发布</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="app-grid" id="applicationGrid"></div>
+        </div>
+
+        <div class="panel">
+          <div class="section-title">
+            <div>
+              <h2>应用级聊天联调</h2>
+              <p>直接通过 Java 平台入口发消息，检查应用配置是否正确透传到 AI 服务。</p>
+            </div>
+          </div>
+          <div class="chat-shell">
+            <div class="stack">
+              <div class="field">
+                <label for="chatAppSelect">目标应用</label>
+                <select id="chatAppSelect"></select>
+              </div>
+              <div class="field">
+                <label for="chatUserSelect">操作者（可选）</label>
+                <select id="chatUserSelect"></select>
+              </div>
+              <div class="field">
+                <label for="chatMessageInput">消息内容</label>
+                <textarea id="chatMessageInput" placeholder="例如：总结一下这个应用当前绑定的知识库和模型配置。"></textarea>
+              </div>
+              <div class="actions">
+                <button class="btn btn-primary" id="sendChatButton">发送消息</button>
+              </div>
+              <div class="status-text" id="chatStatus"></div>
+              <div class="chat-log" id="chatLog"></div>
+            </div>
+            <div class="chat-output" id="chatOutput">
+              <div class="empty">选择一个应用后发送消息，回答会显示在这里。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-title">
+            <div>
+              <h2>审计日志</h2>
+              <p>当前最小原型已经记录了租户创建、用户创建、应用创建、发布与回退草稿。</p>
+            </div>
+          </div>
+          <div class="grid-3">
+            <div class="field">
+              <label for="auditTenantSelect">按租户过滤</label>
+              <select id="auditTenantSelect"></select>
+            </div>
+            <div class="field">
+              <label for="auditActionSelect">按动作过滤</label>
+              <select id="auditActionSelect">
+                <option value="">全部动作</option>
+                <option value="TENANT_CREATED">TENANT_CREATED</option>
+                <option value="USER_CREATED">USER_CREATED</option>
+                <option value="APPLICATION_CREATED">APPLICATION_CREATED</option>
+                <option value="APPLICATION_PUBLISHED">APPLICATION_PUBLISHED</option>
+                <option value="APPLICATION_MOVED_TO_DRAFT">APPLICATION_MOVED_TO_DRAFT</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="auditResourceTypeSelect">按资源过滤</label>
+              <select id="auditResourceTypeSelect">
+                <option value="">全部资源</option>
+                <option value="tenant">tenant</option>
+                <option value="platform_user">platform_user</option>
+                <option value="application">application</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-soft" id="refreshAuditButton">刷新审计</button>
+          </div>
+          <div class="audit-list" id="auditList" style="margin-top:16px;"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      tenants: [],
+      users: [],
+      roles: [],
+      applications: [],
+      providers: [],
+      knowledgeBases: [],
+      auditLogs: [],
+      chatMessages: []
+    };
+
+    const els = {
+      tenantCount: document.getElementById("tenantCount"),
+      userCount: document.getElementById("userCount"),
+      applicationCount: document.getElementById("applicationCount"),
+      publishedCount: document.getElementById("publishedCount"),
+      tenantList: document.getElementById("tenantList"),
+      userList: document.getElementById("userList"),
+      roleGrid: document.getElementById("roleGrid"),
+      applicationGrid: document.getElementById("applicationGrid"),
+      auditList: document.getElementById("auditList"),
+      chatLog: document.getElementById("chatLog"),
+      chatOutput: document.getElementById("chatOutput"),
+      platformHealthChip: document.getElementById("platformHealthChip"),
+      platformHealthLabel: document.getElementById("platformHealthLabel"),
+      providerHealthChip: document.getElementById("providerHealthChip"),
+      providerHealthLabel: document.getElementById("providerHealthLabel"),
+      knowledgeHealthChip: document.getElementById("knowledgeHealthChip"),
+      knowledgeHealthLabel: document.getElementById("knowledgeHealthLabel"),
+      tenantStatus: document.getElementById("tenantStatus"),
+      userStatus: document.getElementById("userStatus"),
+      appStatus: document.getElementById("appStatus"),
+      chatStatus: document.getElementById("chatStatus"),
+      tenantQueryInput: document.getElementById("tenantQueryInput"),
+      userQueryInput: document.getElementById("userQueryInput"),
+      appQueryInput: document.getElementById("appQueryInput"),
+      appFilterStatusSelect: document.getElementById("appFilterStatusSelect"),
+      appFilterTenantSelect: document.getElementById("appFilterTenantSelect"),
+      userFilterTenantSelect: document.getElementById("userFilterTenantSelect"),
+      auditTenantSelect: document.getElementById("auditTenantSelect"),
+      auditActionSelect: document.getElementById("auditActionSelect"),
+      auditResourceTypeSelect: document.getElementById("auditResourceTypeSelect"),
+      userTenantSelect: document.getElementById("userTenantSelect"),
+      appTenantSelect: document.getElementById("appTenantSelect"),
+      userRoleSelect: document.getElementById("userRoleSelect"),
+      appProviderSelect: document.getElementById("appProviderSelect"),
+      appKnowledgeBaseSelect: document.getElementById("appKnowledgeBaseSelect"),
+      chatAppSelect: document.getElementById("chatAppSelect"),
+      chatUserSelect: document.getElementById("chatUserSelect")
+    };
+
+    function setStatus(id, text, isError = false) {
+      const node = document.getElementById(id);
+      node.textContent = text || "";
+      node.classList.toggle("danger", isError);
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function optionHtml(value, label) {
+      return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
+    }
+
+    function renderSelect(select, items, mapFn, includeEmptyLabel) {
+      const current = select.value;
+      let html = includeEmptyLabel ? optionHtml("", includeEmptyLabel) : "";
+      html += items.map(mapFn).join("");
+      select.innerHTML = html;
+      if ([...select.options].some((option) => option.value === current)) {
+        select.value = current;
+      }
+    }
+
+    async function request(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        ...options
+      });
+
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (error) {
+        payload = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(payload?.detail || `${response.status} ${response.statusText}`);
+      }
+      return payload;
+    }
+
+    function renderOverview() {
+      els.tenantCount.textContent = state.tenants.length;
+      els.userCount.textContent = state.users.length;
+      els.applicationCount.textContent = state.applications.length;
+      els.publishedCount.textContent = state.applications.filter((item) => item.status === "published").length;
+    }
+
+    function renderTenantList() {
+      const query = els.tenantQueryInput.value.trim().toLowerCase();
+      const tenants = state.tenants.filter((item) => !query || item.name.toLowerCase().includes(query));
+
+      if (!tenants.length) {
+        els.tenantList.innerHTML = '<div class="empty">还没有租户数据，先在上面创建一个。</div>';
+        return;
+      }
+
+      els.tenantList.innerHTML = tenants.map((item) => `
+        <div class="list-item">
+          <h3>${escapeHtml(item.name)}</h3>
+          <p>${escapeHtml(item.description || "未填写描述")}</p>
+          <div class="row" style="margin-top:10px;">
+            <span class="chip">${escapeHtml(item.id)}</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderRoles() {
+      if (!state.roles.length) {
+        els.roleGrid.innerHTML = '<div class="empty">角色目录暂未加载。</div>';
+        return;
+      }
+
+      els.roleGrid.innerHTML = state.roles.map((role) => `
+        <div class="role-card">
+          <strong>${escapeHtml(role.name)}</strong>
+          <p>${escapeHtml(role.description)}</p>
+          <div class="permissions">
+            ${(role.permissions || []).map((permission) => `<span>${escapeHtml(permission)}</span>`).join("")}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderUsers() {
+      const tenantId = els.userFilterTenantSelect.value;
+      const query = els.userQueryInput.value.trim().toLowerCase();
+      const users = state.users.filter((item) => {
+        const hitTenant = !tenantId || item.tenantId === tenantId;
+        const hitQuery = !query || item.displayName.toLowerCase().includes(query) || item.email.toLowerCase().includes(query);
+        return hitTenant && hitQuery;
+      });
+
+      if (!users.length) {
+        els.userList.innerHTML = '<div class="empty">当前筛选条件下没有平台用户。</div>';
+        return;
+      }
+
+      els.userList.innerHTML = users.map((item) => `
+        <div class="list-item">
+          <h3>${escapeHtml(item.displayName)}</h3>
+          <p>${escapeHtml(item.email)}</p>
+          <div class="row" style="margin-top:10px;">
+            <span class="chip">${escapeHtml(item.tenantName)}</span>
+            <span class="chip">${escapeHtml(item.roleName || item.roleCode)}</span>
+            <span class="chip">${escapeHtml(item.status)}</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function statusPill(status) {
+      return status === "published"
+        ? '<span class="status-pill status-published">已发布</span>'
+        : '<span class="status-pill status-draft">草稿</span>';
+    }
+
+    function renderApplications() {
+      const query = els.appQueryInput.value.trim().toLowerCase();
+      const tenantId = els.appFilterTenantSelect.value;
+      const status = els.appFilterStatusSelect.value;
+
+      const apps = state.applications.filter((item) => {
+        const hitQuery = !query || item.name.toLowerCase().includes(query);
+        const hitTenant = !tenantId || item.tenantId === tenantId;
+        const hitStatus = !status || item.status === status;
+        return hitQuery && hitTenant && hitStatus;
+      });
+
+      if (!apps.length) {
+        els.applicationGrid.innerHTML = '<div class="empty">当前没有匹配的应用，先创建一个应用试试。</div>';
+        return;
+      }
+
+      els.applicationGrid.innerHTML = apps.map((item) => `
+        <div class="app-card">
+          <div class="app-head">
+            <div>
+              <h3>${escapeHtml(item.name)}</h3>
+              <p>${escapeHtml(item.description || "未填写描述")}</p>
+            </div>
+            ${statusPill(item.status)}
+          </div>
+          <div class="app-meta">
+            <span class="tag">租户：${escapeHtml(item.tenantName)}</span>
+            <span class="tag">类型：${escapeHtml(item.appType)}</span>
+            <span class="tag">Provider：${escapeHtml(item.defaultProviderName || "未绑定")}</span>
+            <span class="tag">知识库：${escapeHtml(item.defaultKnowledgeBaseName || "未绑定")}</span>
+          </div>
+          <p>${escapeHtml(item.systemPrompt || "未配置 system prompt")}</p>
+          <div class="actions">
+            <button class="btn btn-soft" data-action="use-chat" data-id="${escapeHtml(item.id)}">设为聊天目标</button>
+            ${item.status === "published"
+              ? `<button class="btn btn-secondary" data-action="to-draft" data-id="${escapeHtml(item.id)}">退回草稿</button>`
+              : `<button class="btn btn-primary" data-action="publish" data-id="${escapeHtml(item.id)}">发布应用</button>`}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderAuditLogs() {
+      if (!state.auditLogs.length) {
+        els.auditList.innerHTML = '<div class="empty">还没有审计日志，先做几次创建或发布动作。</div>';
+        return;
+      }
+
+      els.auditList.innerHTML = state.auditLogs.map((item) => `
+        <div class="audit-item">
+          <strong>${escapeHtml(item.action)} · ${escapeHtml(item.resourceName || item.resourceType)}</strong>
+          <div class="audit-line">租户：${escapeHtml(item.tenantId || "-")} ｜ 操作者：${escapeHtml(item.actorDisplayName || "system")}</div>
+          <div class="audit-line">${escapeHtml(item.detail || "")}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderChatSelectors() {
+      renderSelect(els.chatAppSelect, state.applications, (item) => optionHtml(item.id, `${item.name} · ${item.tenantName}`), "请选择应用");
+      renderSelect(els.chatUserSelect, state.users, (item) => optionHtml(item.id, `${item.displayName} · ${item.roleCode}`), "不带操作者");
+    }
+
+    function renderChatLog() {
+      if (!state.chatMessages.length) {
+        els.chatLog.innerHTML = '<div class="empty">这里会记录当前页面发过的联调消息。</div>';
+        return;
+      }
+
+      els.chatLog.innerHTML = state.chatMessages.map((item) => `
+        <div class="chat-bubble ${item.role === "user" ? "user" : ""}">
+          <strong>${item.role === "user" ? "User" : "Assistant"}</strong>
+          <div>${escapeHtml(item.content)}</div>
+        </div>
+      `).join("");
+    }
+
+    function hydrateSelectors() {
+      renderSelect(els.userTenantSelect, state.tenants, (item) => optionHtml(item.id, item.name), "请选择租户");
+      renderSelect(els.appTenantSelect, state.tenants, (item) => optionHtml(item.id, item.name), "请选择租户");
+      renderSelect(els.userFilterTenantSelect, state.tenants, (item) => optionHtml(item.id, item.name), "全部租户");
+      renderSelect(els.appFilterTenantSelect, state.tenants, (item) => optionHtml(item.id, item.name), "全部租户");
+      renderSelect(els.auditTenantSelect, state.tenants, (item) => optionHtml(item.id, item.name), "全部租户");
+      renderSelect(els.userRoleSelect, state.roles, (item) => optionHtml(item.code, `${item.name} · ${item.code}`), "请选择角色");
+      renderSelect(els.appProviderSelect, state.providers, (item) => optionHtml(item.id, `${item.name} · ${item.modelName}`), "暂不绑定 Provider");
+      renderSelect(els.appKnowledgeBaseSelect, state.knowledgeBases, (item) => optionHtml(item.id, `${item.name} · ${item.documentCount} docs`), "暂不绑定知识库");
+      renderChatSelectors();
+    }
+
+    async function loadHealth() {
+      try {
+        await request("/health");
+        els.platformHealthChip.textContent = "正常";
+        els.platformHealthLabel.textContent = "platform-service 可用";
+      } catch (error) {
+        els.platformHealthChip.textContent = "失败";
+        els.platformHealthLabel.textContent = error.message;
+      }
+    }
+
+    async function loadTenants() {
+      state.tenants = await request("/api/v1/tenants");
+    }
+
+    async function loadUsers() {
+      state.users = await request("/api/v1/users");
+    }
+
+    async function loadRoles() {
+      state.roles = await request("/api/v1/roles");
+    }
+
+    async function loadApplications() {
+      state.applications = await request("/api/v1/applications");
+    }
+
+    async function loadCatalogs() {
+      try {
+        state.providers = await request("/api/v1/catalog/providers");
+        els.providerHealthChip.textContent = String(state.providers.length);
+        els.providerHealthLabel.textContent = "Provider 目录已同步";
+      } catch (error) {
+        state.providers = [];
+        els.providerHealthChip.textContent = "失败";
+        els.providerHealthLabel.textContent = error.message;
+      }
+
+      try {
+        state.knowledgeBases = await request("/api/v1/catalog/knowledge-bases");
+        els.knowledgeHealthChip.textContent = String(state.knowledgeBases.length);
+        els.knowledgeHealthLabel.textContent = "知识库目录已同步";
+      } catch (error) {
+        state.knowledgeBases = [];
+        els.knowledgeHealthChip.textContent = "失败";
+        els.knowledgeHealthLabel.textContent = error.message;
+      }
+    }
+
+    async function loadAuditLogs() {
+      const params = new URLSearchParams();
+      if (els.auditTenantSelect.value) params.set("tenantId", els.auditTenantSelect.value);
+      if (els.auditActionSelect.value) params.set("action", els.auditActionSelect.value);
+      if (els.auditResourceTypeSelect.value) params.set("resourceType", els.auditResourceTypeSelect.value);
+      state.auditLogs = await request(`/api/v1/audit-logs?${params.toString()}`);
+    }
+
+    async function loadAll() {
+      await loadHealth();
+      await Promise.all([loadTenants(), loadUsers(), loadRoles(), loadApplications(), loadCatalogs()]);
+      await loadAuditLogs();
+      renderOverview();
+      hydrateSelectors();
+      renderTenantList();
+      renderRoles();
+      renderUsers();
+      renderApplications();
+      renderAuditLogs();
+      renderChatLog();
+    }
+
+    async function createTenant() {
+      const name = document.getElementById("tenantNameInput").value.trim();
+      const description = document.getElementById("tenantDescriptionInput").value.trim();
+      if (!name) {
+        setStatus("tenantStatus", "请先填写租户名称。", true);
+        return;
+      }
+
+      try {
+        await request("/api/v1/tenants", {
+          method: "POST",
+          body: JSON.stringify({ name, description })
+        });
+        document.getElementById("tenantNameInput").value = "";
+        document.getElementById("tenantDescriptionInput").value = "";
+        setStatus("tenantStatus", "租户创建成功。");
+        await loadAll();
+      } catch (error) {
+        setStatus("tenantStatus", error.message, true);
+      }
+    }
+
+    async function createUser() {
+      const tenantId = els.userTenantSelect.value;
+      const roleCode = els.userRoleSelect.value;
+      const displayName = document.getElementById("userDisplayNameInput").value.trim();
+      const email = document.getElementById("userEmailInput").value.trim();
+
+      if (!tenantId || !roleCode || !displayName || !email) {
+        setStatus("userStatus", "请完整填写用户表单。", true);
+        return;
+      }
+
+      try {
+        await request("/api/v1/users", {
+          method: "POST",
+          body: JSON.stringify({ tenantId, roleCode, displayName, email, status: "active" })
+        });
+        document.getElementById("userDisplayNameInput").value = "";
+        document.getElementById("userEmailInput").value = "";
+        setStatus("userStatus", "平台用户创建成功。");
+        await loadAll();
+      } catch (error) {
+        setStatus("userStatus", error.message, true);
+      }
+    }
+
+    async function createApplication() {
+      const payload = {
+        tenantId: els.appTenantSelect.value || null,
+        name: document.getElementById("appNameInput").value.trim(),
+        description: document.getElementById("appDescriptionInput").value.trim(),
+        appType: document.getElementById("appTypeInput").value.trim() || "chatbot",
+        systemPrompt: document.getElementById("appPromptInput").value.trim() || null,
+        defaultProviderId: els.appProviderSelect.value || null,
+        defaultKnowledgeBaseId: els.appKnowledgeBaseSelect.value || null
+      };
+
+      if (!payload.tenantId || !payload.name || !payload.appType) {
+        setStatus("appStatus", "请至少填写租户、应用名称和应用类型。", true);
+        return;
+      }
+
+      try {
+        await request("/api/v1/applications", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        document.getElementById("appNameInput").value = "";
+        document.getElementById("appDescriptionInput").value = "";
+        document.getElementById("appPromptInput").value = "";
+        setStatus("appStatus", "应用已创建，当前状态为草稿。");
+        await loadAll();
+      } catch (error) {
+        setStatus("appStatus", error.message, true);
+      }
+    }
+
+    async function updateApplicationStatus(applicationId, action) {
+      const actorUserId = els.chatUserSelect.value || null;
+      try {
+        await request(`/api/v1/applications/${applicationId}/${action}`, {
+          method: "POST",
+          body: JSON.stringify({
+            actorUserId,
+            note: action === "publish" ? "Published from platform console" : "Moved to draft from platform console"
+          })
+        });
+        setStatus("appStatus", action === "publish" ? "应用已发布。" : "应用已退回草稿。");
+        await loadAll();
+      } catch (error) {
+        setStatus("appStatus", error.message, true);
+      }
+    }
+
+    async function sendChat() {
+      const applicationId = els.chatAppSelect.value;
+      const content = document.getElementById("chatMessageInput").value.trim();
+      const actorUserId = els.chatUserSelect.value;
+
+      if (!applicationId || !content) {
+        setStatus("chatStatus", "请先选择应用并输入消息。", true);
+        return;
+      }
+
+      state.chatMessages.push({ role: "user", content });
+      renderChatLog();
+      setStatus("chatStatus", "正在通过平台入口转发消息...");
+
+      try {
+        const payload = await request(`/api/v1/applications/${applicationId}/chat`, {
+          method: "POST",
+          body: JSON.stringify({
+            messages: [{ role: "user", content }],
+            metadata: actorUserId ? { actorUserId } : {}
+          })
+        });
+
+        state.chatMessages.push({ role: "assistant", content: payload.reply });
+        renderChatLog();
+        els.chatOutput.innerHTML = `
+          <h3 style="margin:0 0 10px;">模型回答</h3>
+          <p><strong>Provider：</strong>${escapeHtml(payload.provider)}</p>
+          <p><strong>Model：</strong>${escapeHtml(payload.model)}</p>
+          <p style="margin-top:12px; color:var(--ink);">${escapeHtml(payload.reply)}</p>
+        `;
+        document.getElementById("chatMessageInput").value = "";
+        setStatus("chatStatus", "聊天联调完成。");
+      } catch (error) {
+        state.chatMessages.push({ role: "assistant", content: `请求失败：${error.message}` });
+        renderChatLog();
+        els.chatOutput.innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
+        setStatus("chatStatus", error.message, true);
+      }
+    }
+
+    document.getElementById("createTenantButton").addEventListener("click", createTenant);
+    document.getElementById("createUserButton").addEventListener("click", createUser);
+    document.getElementById("createAppButton").addEventListener("click", createApplication);
+    document.getElementById("sendChatButton").addEventListener("click", sendChat);
+    document.getElementById("refreshAllButton").addEventListener("click", loadAll);
+    document.getElementById("refreshAuditButton").addEventListener("click", async () => {
+      try {
+        await loadAuditLogs();
+        renderAuditLogs();
+      } catch (error) {
+        setStatus("appStatus", error.message, true);
+      }
+    });
+    document.getElementById("scrollToAppsButton").addEventListener("click", () => {
+      document.getElementById("appsPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    els.tenantQueryInput.addEventListener("input", renderTenantList);
+    els.userQueryInput.addEventListener("input", renderUsers);
+    els.userFilterTenantSelect.addEventListener("change", renderUsers);
+    els.appQueryInput.addEventListener("input", renderApplications);
+    els.appFilterTenantSelect.addEventListener("change", renderApplications);
+    els.appFilterStatusSelect.addEventListener("change", renderApplications);
+    els.auditTenantSelect.addEventListener("change", async () => { await loadAuditLogs(); renderAuditLogs(); });
+    els.auditActionSelect.addEventListener("change", async () => { await loadAuditLogs(); renderAuditLogs(); });
+    els.auditResourceTypeSelect.addEventListener("change", async () => { await loadAuditLogs(); renderAuditLogs(); });
+
+    document.getElementById("applicationGrid").addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const { action, id } = button.dataset;
+      if (action === "publish") {
+        await updateApplicationStatus(id, "publish");
+      } else if (action === "to-draft") {
+        await updateApplicationStatus(id, "draft");
+      } else if (action === "use-chat") {
+        els.chatAppSelect.value = id;
+        document.getElementById("chatMessageInput").focus();
+        setStatus("chatStatus", "已切换聊天目标应用。");
+      }
+    });
+
+    loadAll().catch((error) => {
+      els.chatOutput.innerHTML = `<div class="empty">页面初始化失败：${escapeHtml(error.message)}</div>`;
+    });
+  </script>
+</body>
+</html>

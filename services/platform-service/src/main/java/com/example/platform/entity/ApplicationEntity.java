@@ -41,6 +41,12 @@ public class ApplicationEntity {
     @Column
     private UUID defaultKnowledgeBaseId;
 
+    @Column(nullable = false, length = 32)
+    private String status = "draft";
+
+    @Column
+    private Instant publishedAt;
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -58,6 +64,9 @@ public class ApplicationEntity {
         }
         if (systemPrompt == null) {
             systemPrompt = "";
+        }
+        if (status == null || status.isBlank()) {
+            status = "draft";
         }
     }
 
@@ -131,5 +140,21 @@ public class ApplicationEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Instant getPublishedAt() {
+        return publishedAt;
+    }
+
+    public void setPublishedAt(Instant publishedAt) {
+        this.publishedAt = publishedAt;
     }
 }

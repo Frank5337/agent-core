@@ -16,6 +16,10 @@ Current implementation:
 
 - Architecture: [docs/ai-middle-platform-mvp.md](/d:/Users/hzito02/IdeaProjects/codex/agent-core/docs/ai-middle-platform-mvp.md)
 - Local setup: [docs/local-setup.md](/d:/Users/hzito02/IdeaProjects/codex/agent-core/docs/local-setup.md)
+- Feature list: [docs/feature-list.md](/d:/Users/hzito02/IdeaProjects/codex/agent-core/docs/feature-list.md)
+- Current status: [docs/current-status.md](/d:/Users/hzito02/IdeaProjects/codex/agent-core/docs/current-status.md)
+- API overview: [docs/api-overview.md](/d:/Users/hzito02/IdeaProjects/codex/agent-core/docs/api-overview.md)
+- Platform console guide: [docs/platform-console-guide.md](/d:/Users/hzito02/IdeaProjects/codex/agent-core/docs/platform-console-guide.md)
 
 ## Repository Layout
 
@@ -41,7 +45,13 @@ copy .env.example .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-Then open `http://localhost:8000` to use the website RAG demo page, which now supports multi-page crawl and website Q&A.
+For the current standalone website RAG demo, we recommend running `ai-service` on `8002` instead:
+
+```bash
+uvicorn app.main:app --reload --port 8002
+```
+
+Then open `http://localhost:8002` to use the website RAG demo page, which supports multi-page crawl, website Q&A, and multi-turn follow-up questions.
 
 Then start `platform-service`:
 
@@ -49,6 +59,8 @@ Then start `platform-service`:
 cd services/platform-service
 mvn spring-boot:run
 ```
+
+After that, open `http://localhost:8080` to use the Java platform console.
 
 ## Test Commands
 

@@ -3,7 +3,7 @@ package com.example.platform.model;
 import java.time.Instant;
 import java.util.UUID;
 
-// 返回给前端的应用视图对象，尽量带上可直接展示的名称字段。
+// 返回给前端的应用视图对象，带上可直接展示的关联名称和发布状态。
 public record ApplicationResponse(
     UUID id,
     UUID tenantId,
@@ -16,6 +16,8 @@ public record ApplicationResponse(
     String defaultProviderName,
     UUID defaultKnowledgeBaseId,
     String defaultKnowledgeBaseName,
+    String status,
+    Instant publishedAt,
     Instant createdAt
 ) {
 }

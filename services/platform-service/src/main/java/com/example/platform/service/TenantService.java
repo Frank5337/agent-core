@@ -14,14 +14,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class TenantService {
 
     private final TenantRepository tenantRepository;
+    private final AuditLogService auditLogService;
 
-    public TenantService(TenantRepository tenantRepository) {
+    public TenantService(TenantRepository tenantRepository, AuditLogService auditLogService) {
         this.tenantRepository = tenantRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
     public List<TenantResponse> listTenants(String query) {
-        // 管理台列表默认按创建时间倒序，输入关键字时只做名字模糊搜索。
+        // 原型阶段先支持最常见的名称模糊搜索即可。
         if (query == null || query.isBlank()) {
             return tenantRepository.findAllByOrderByCreatedAtDesc().stream().map(this::toResponse).toList();
         }
@@ -40,12 +42,23 @@ public class TenantService {
         TenantEntity tenant = new TenantEntity();
         tenant.setName(request.name());
         tenant.setDescription(request.description());
-        return toResponse(tenantRepository.save(tenant));
+
+        TenantEntity saved = tenantRepository.save(tenant);
+        auditLogService.record(
+            saved.getId(),
+            null,
+            "system",
+            "TENANT_CREATED",
+            "tenant",
+            saved.getId(),
+            saved.getName(),
+            "Created tenant"
+        );
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
     public TenantEntity requireTenant(UUID tenantId) {
-        // 统一在服务层兜底 404，避免上层重复写不存在判断。
         return tenantRepository.findById(tenantId)
             .orElseThrow(() -> new ResourceNotFoundException("tenant not found"));
     }
