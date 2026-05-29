@@ -5,7 +5,7 @@ from app.db import Base
 from app.models.chunk import ChunkModel
 from app.models.document import DocumentModel
 from app.models.knowledge_base import KnowledgeBaseModel
-from app.schemas.rag import RagAskRequest, WebsiteIngestRequest
+from app.schemas.rag import RagAskRequest, RagMessage, WebsiteIngestRequest
 from app.services.rag_service import rag_service
 from app.services.website_service import WebsiteContent
 
@@ -161,3 +161,34 @@ def test_ingest_website_accepts_url_without_scheme(monkeypatch) -> None:
 
     assert captured["url"] == "https://frank5337.github.io/"
     assert response.knowledge_base_name == "frank5337.github.io"
+
+
+def test_ask_passes_history_to_generation_service(monkeypatch) -> None:
+    session = build_session()
+    captured: dict[str, object] = {}
+
+    def fake_answer(question, contexts, history):
+        captured["question"] = question
+        captured["contexts"] = contexts
+        captured["history"] = history
+        return "基于上下文和历史消息的回答"
+
+    monkeypatch.setattr("app.services.rag_service.generation_service.answer_question", fake_answer)
+
+    response = rag_service.ask(
+        session,
+        RagAskRequest(
+            knowledge_base_id=session.info["knowledge_base_id"],
+            question="这和上一个问题有关吗？",
+            top_k=2,
+            history=[
+                RagMessage(role="user", content="先介绍一下这个站点。"),
+                RagMessage(role="assistant", content="这个站点主要分享旅行与美食内容。"),
+            ],
+        ),
+    )
+
+    assert response.answer == "基于上下文和历史消息的回答"
+    assert captured["question"] == "这和上一个问题有关吗？"
+    assert len(captured["contexts"]) >= 1
+    assert len(captured["history"]) == 2

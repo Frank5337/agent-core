@@ -1,183 +1,144 @@
 # Website RAG 链路说明
 
-这份文档说明当前 `http://localhost:8002/` 页面从“输入网址”到“生成 RAG 问答”的完整链路，以及内部运行原理。
+这份文档说明当前 `http://localhost:8002/` 页面从“输入网址”到“RAG 问答”的完整链路，也补充这次新增的三项能力：
 
-适用服务：
+1. 真实 embedding 的独立配置能力
+2. 多轮问答记忆
+3. 更像 AI 产品的回答区与引用区交互
 
+适用范围：
 - 前端页面：`services/ai-service/frontend/index.html`
 - 后端服务：`services/ai-service`
 
-## 1. 总体目标
+## 1. 当前整体链路
 
-当前这套能力的目标是：
+现在这条链路已经是标准的 `RAG` 流程：
 
-1. 用户在页面输入一个网站地址。
-2. 系统抓取该网站首页及站内若干页面。
-3. 将网页正文清洗、切片并写入知识库。
-4. 为每个切片生成向量。
-5. 用户提问时先做向量检索，再把检索结果交给大模型回答。
+`网站抓取 -> 文本清洗 -> 切片 -> embedding -> 检索 -> 组装上下文 -> 大模型回答`
 
-这本质上是一个面向网站内容的 `RAG` 流程：
-
-`网页抓取 -> 文本切片 -> 向量化 -> 检索 -> 上下文增强 -> 大模型回答`
-
-## 2. 入口与页面加载
-
-浏览器访问：
+页面入口是：
 
 `http://localhost:8002/`
 
-后端入口在 [main.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/main.py:1)。
+用户在页面上主要做两件事：
 
-页面加载过程：
+1. 输入网站地址，点击“抓取并入库”
+2. 在问答区提问，或者连续追问
 
-1. FastAPI 启动时执行 `on_startup()`。
-2. `on_startup()` 调用 `init_db()`，初始化数据库表和必要字段。
-3. 浏览器访问 `/` 时，FastAPI 返回 `frontend/index.html`。
-
-对应代码：
-
-- [main.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/main.py:1)
-- [bootstrap.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/bootstrap.py:1)
-
-## 3. 页面上的两个核心动作
-
-页面主要有两个动作：
-
-1. `抓取并入库`
-2. `开始提问`
-
-这两个动作分别对应两个后端接口：
+对应的后端接口是：
 
 - `POST /api/v1/rag/ingest-website`
 - `POST /api/v1/rag/ask`
+- `GET /api/v1/system/rag-status`
 
-前端都在 [index.html](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/frontend/index.html:1) 里通过 `fetch()` 调用。
+## 2. 页面侧现在支持什么
 
-## 4. 第一步：输入网址并抓取网页
+当前前端页面已经支持：
 
-### 4.1 前端发请求
+- 网站地址可以直接输入 `example.com`，不必手动补 `http://` 或 `https://`
+- 站点导入后左侧展示知识库信息、页面列表和原文链接
+- 右侧问答区支持连续多轮追问
+- 引用默认折叠，点击后再展开
+- 会话内容会暂存在浏览器 `sessionStorage`
+- 页面会显示当前 `generation provider`、`embedding mode`、`generation model`
 
-用户点击 `抓取并入库` 后，前端会提交：
+## 3. 第一步：输入网站地址并导入
+
+### 3.1 前端请求
+
+用户点击“抓取并入库”后，前端会先做一次 URL 规范化：
+
+- 如果已经带协议，直接使用
+- 如果没带协议，自动补 `https://`
+
+例如：
+
+- `frank5337.github.io` -> `https://frank5337.github.io/`
+- `example.com` -> `https://example.com/`
+
+前端提交的数据结构是：
 
 ```json
 {
-  "url": "https://example.com",
+  "url": "https://example.com/",
   "knowledge_base_name": "example.com",
   "max_pages": 5,
   "same_domain_only": true
 }
 ```
 
-其中：
+### 3.2 后端入口
 
-- `url`：起始网址
-- `knowledge_base_name`：知识库名，可为空
-- `max_pages`：最多抓多少页
-- `same_domain_only`：是否只抓同域链接
+请求先进入：
 
-### 4.2 后端路由进入
+- `app/api/routes/rag.py`
 
-请求首先进入 [rag.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/api/routes/rag.py:1) 的 `ingest_website()`。
+随后转给：
 
-这个路由只做两件事：
+- `rag_service.ingest_website(db, payload)`
 
-1. 获取数据库会话 `db`
-2. 调用 `rag_service.ingest_website(db, payload)`
+### 3.3 后端 URL 兜底
 
-### 4.3 网站抓取
+后端不会依赖前端必须传完整 URL。
 
-真正的抓取逻辑在 [website_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/website_service.py:1)。
+`WebsiteIngestRequest.url` 现在是普通字符串，真正的规范化逻辑在：
 
-内部流程：
+- `app/services/website_service.py`
 
-1. `crawl()` 从用户输入的起始 URL 开始。
-2. 用一个队列按广度优先方式抓取页面。
-3. 每抓到一页，解析 HTML：
-   - 提取 `<title>`
-   - 提取可见正文
-   - 提取页面里的链接
-4. 对文本做清洗：
-   - 去掉脚本、样式、无意义导航文本
-   - 去掉重复行
-   - 合并空白字符
-5. 如果设置了 `same_domain_only=true`，只保留同域链接继续抓取。
-6. 抓到 `max_pages` 或没有更多链接时结束。
+也就是说，就算前端没补协议，后端也会补一次，避免因为页面绕过或接口直调导致失败。
 
-产出是 `WebsiteContent` 列表，每个元素包含：
+## 4. 第二步：抓取网站内容
+
+抓取逻辑在：
+
+- `app/services/website_service.py`
+
+核心流程：
+
+1. 从起始 URL 开始做 BFS 抓取
+2. 每抓一个页面，提取：
+   - 页面标题
+   - 可见正文
+   - 链接
+3. 过滤脚本、样式、导航噪音和重复文本
+4. 如果 `same_domain_only=true`，只继续抓同域页面
+5. 抓到 `max_pages` 或没有可继续的链接时结束
+
+输出结构是 `WebsiteContent` 列表，每一项包含：
 
 - `url`
 - `title`
 - `text`
 - `links`
 
-## 5. 第二步：写入知识库与文档
+## 5. 第三步：写入知识库与文档
 
-网站抓取完成后，逻辑回到 [rag_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/rag_service.py:1)。
+编排逻辑在：
 
-### 5.1 创建或复用知识库
+- `app/services/rag_service.py`
 
-`_get_or_create_knowledge_base()` 会：
+导入时会做几件事：
 
-1. 先按名称查询知识库
-2. 如果存在，就直接复用
-3. 如果不存在，就新建
+1. 根据 URL 或手工名称找到知识库，若不存在则创建
+2. 重置该知识库已有文档和 chunk
+3. 将每个抓到的页面写成一条 `document`
+4. 立刻为 document 切片
+5. 为切片生成 embedding
 
-知识库数据表对应：
+当前重建策略是“重新导入时清掉旧内容再重建”，优点是简单、稳定，不容易把旧页面和新页面混在一起。
 
-- `knowledge_bases`
+## 6. 第四步：切片
 
-### 5.2 重建知识库内容
+切片逻辑在：
 
-当前策略是“重新抓取时重建该知识库中的文档与切片”。
+- `app/services/document_service.py`
 
-`_reset_knowledge_base_documents()` 会：
+当前切片策略是“固定窗口 + overlap”：
 
-1. 删除该知识库已有的 `documents`
-2. 删除关联的 `chunks`
-3. 重置 `document_count`
+- `chunk_size`
+- `chunk_overlap`
 
-这样做的原因：
-
-- 避免旧页面、旧切片、旧索引污染新一轮抓取结果
-- 简化当前实现，不做增量合并
-
-### 5.3 每个网页生成一个文档
-
-每个 `WebsiteContent` 会调用 `_upsert_document()`，进一步进入 [document_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/document_service.py:1)。
-
-写入的文档字段包括：
-
-- `name`：页面标题
-- `source_type`：`url`
-- `source_uri`：原始页面地址
-- `mime_type`：`text/html`
-- `content`：清洗后的正文
-- `status`：初始 `draft`
-
-对应表：
-
-- `documents`
-
-## 6. 第三步：文档切片
-
-文档创建后，会立即调用 `document_service.parse_document()`。
-
-切片逻辑：
-
-1. 先清掉该文档已有 chunk
-2. 按 `chunk_size` 和 `chunk_overlap` 做滑动窗口切分
-3. 每一段生成一个 `ChunkModel`
-4. 更新文档的 `chunk_count`
-5. 文档状态改成 `parsed`
-
-当前切片策略是简单的“定长窗口切片”，不是语义切片。
-
-对应表：
-
-- `chunks`
-
-每个 chunk 主要字段：
+每个 chunk 会保存：
 
 - `chunk_index`
 - `content`
@@ -186,110 +147,231 @@
 - `embedding_model`
 - `embedding_status`
 
-## 7. 第四步：生成向量
+## 7. 什么是 embedding
 
-文档切片完成后，RAG 服务会立即调用：
+`Embedding` 可以理解为“把一段文本变成一组向量数字”，让系统可以比较“语义上像不像”，而不只是比较字面是否完全相同。
 
-`embedding_service.ensure_chunk_embeddings(...)`
+### 7.1 为什么 RAG 需要 embedding
 
-对应实现：
+如果没有 embedding，系统通常只能做关键词匹配：
 
-- [embedding_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/embedding_service.py:1)
+- 问题里写了“Java”
+- 页面里也刚好写了“Java”
 
-### 7.1 当前支持两种向量模式
+这样还能匹配到。
 
-#### 模式 A：远程 embedding
+但如果用户问的是：
 
-当满足以下条件时启用：
+- “这个网站里有哪些后端技术内容？”
 
-- 配置了 API Key
-- 并且当前 `base_url` 不是 DeepSeek
+页面可能写的是：
 
-此时会请求：
+- JVM
+- Spring
+- 并发
+- 面试题
 
-- `POST {base_url}/embeddings`
+这时候单纯靠关键词就不够稳了。
 
-返回的向量会写入 `chunk.embedding_json`。
+Embedding 的作用就是把：
+
+- 问题
+- 文档 chunk
+
+都映射到同一个向量空间里。这样即便措辞不同，只要语义接近，也能通过向量相似度把相关 chunk 找出来。
+
+### 7.2 在这套系统里，embedding 用在什么地方
+
+当前系统里，embedding 用在两处：
+
+1. 文档入库后，为每个 chunk 生成 embedding
+2. 用户提问时，为 query 生成 embedding
+
+随后系统会计算：
+
+- `query embedding`
+- `chunk embedding`
+
+之间的余弦相似度 `cosine similarity`，据此挑出最相关的 `top K` chunk。
+
+### 7.3 现在支持哪两类 embedding
+
+当前代码支持两种模式：
+
+#### 模式 A：真实远程 embedding
+
+当你配置了独立的 embedding provider 时，系统会请求真实接口：
+
+- `POST {embedding_base_url}/embeddings`
+
+这时 `embedding_json` 保存的就是远程模型返回的语义向量。
 
 #### 模式 B：本地 hash embedding
 
-当前实际运行就是这个模式。
+如果没有可用的远程 embedding，系统会回退到本地 hash 向量。
 
-原因：
+它的特点是：
 
-- 当前配置的是 `DeepSeek`
-- 我们没有接入一个明确可用的远程 embedding 接口
+- 不需要额外服务
+- 足够把 RAG 链路跑通
+- 但语义效果弱于真实 embedding
 
-本地模式的实现方式：
+### 7.4 现在为什么默认还是 local-hash
 
-1. 对 chunk 文本分词
-2. 把 token 哈希到固定维度向量槽位
-3. 做归一化
-4. 将向量 JSON 存入 `embedding_json`
+你现在这套环境里，回答模型用的是 `DeepSeek`。
 
-这不是最强的语义 embedding，但能把检索链路完整跑通。
+我们这次把 embedding 配置和 generation 配置拆开了，但如果你没有另外配置一个真实 embedding 提供方，系统还是会显示：
 
-### 7.2 向量持久化
+- `embedding_mode = local-hash`
 
-向量不是只在内存里使用，而是存回数据库：
+也就是：
 
-- `embedding_json`
-- `embedding_model`
-- `embedding_status`
+- 检索：本地向量
+- 回答：DeepSeek
 
-这样后续提问时就不需要重新为所有 chunk 计算向量。
+这已经是可运行的 RAG，但不是效果最强的版本。
 
-## 8. 第五步：用户提问
+## 8. 第五步：真实 embedding 怎么启用
 
-### 8.1 前端发起问答请求
+这次代码已经支持“embedding 独立配置”，也就是：
 
-用户点击 `开始提问` 后，前端会发：
+- generation 继续走 DeepSeek
+- embedding 单独走另一个兼容 OpenAI Embeddings 的服务
+
+新增配置项在：
+
+- `services/ai-service/.env.example`
+
+主要是这些：
+
+```env
+AIMP_EMBEDDING_API_KEY=
+AIMP_EMBEDDING_BASE_URL=
+AIMP_GENERATION_API_KEY=
+AIMP_GENERATION_BASE_URL=
+AIMP_RAG_EMBEDDING_MODEL=text-embedding-3-small
+AIMP_RAG_GENERATION_MODEL=gpt-4.1-mini
+```
+
+### 8.1 推荐配置方式
+
+如果你想保持：
+
+- 回答走 DeepSeek
+- embedding 走真实语义向量
+
+可以这样配：
+
+```env
+AIMP_OPENAI_API_KEY=你的DeepSeekKey
+AIMP_OPENAI_BASE_URL=https://api.deepseek.com
+
+AIMP_EMBEDDING_API_KEY=你的Embedding服务Key
+AIMP_EMBEDDING_BASE_URL=https://api.openai.com/v1
+AIMP_RAG_EMBEDDING_MODEL=text-embedding-3-small
+
+AIMP_GENERATION_API_KEY=你的DeepSeekKey
+AIMP_GENERATION_BASE_URL=https://api.deepseek.com
+AIMP_RAG_GENERATION_MODEL=deepseek-v4-flash
+```
+
+这样运行后：
+
+- `generation_provider = deepseek`
+- `embedding_mode = openai`
+
+### 8.2 运行时如何查看是否生效
+
+调用：
+
+`GET /api/v1/system/rag-status`
+
+如果你看到：
+
+```json
+{
+  "generation_provider": "deepseek",
+  "embedding_mode": "openai",
+  "embedding_model": "text-embedding-3-small"
+}
+```
+
+说明真实 embedding 已经启用。
+
+## 9. 第六步：提问与多轮记忆
+
+用户点击“开始提问”后，前端会提交：
 
 ```json
 {
   "knowledge_base_id": "...",
-  "question": "这个网站是做什么的？",
-  "top_k": 3
+  "question": "这个网站主要介绍什么？",
+  "top_k": 4,
+  "history": [
+    {
+      "role": "user",
+      "content": "先总结一下这个网站"
+    },
+    {
+      "role": "assistant",
+      "content": "这个网站主要分享技术与生活内容"
+    }
+  ]
 }
 ```
 
-### 8.2 路由进入
+这次新增的重点是 `history`。
 
-请求进入 [rag.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/api/routes/rag.py:1) 的 `ask()`。
+### 9.1 记忆是怎么工作的
 
-再转到：
+前端会把最近几轮消息保存在：
 
-`rag_service.ask(db, payload)`
+- `state.chatMessages`
+- `sessionStorage`
 
-## 9. 第六步：向量检索
+每次新提问时，会把最近几轮的：
 
-提问时真正的检索逻辑在：
+- `user`
+- `assistant`
 
-- [retrieval_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/retrieval_service.py:1)
+消息一起带到后端。
 
-### 9.1 检索流程
+### 9.2 后端怎么使用 history
 
-1. 先确保当前知识库的 chunk 都有向量：
-   - `embedding_service.ensure_chunk_embeddings(...)`
-2. 对用户问题生成 query embedding：
-   - `embedding_service.embed_query(question)`
-3. 读出该知识库的所有 chunk
-4. 逐个做相似度计算：
-   - `cosine_similarity(query_embedding, chunk_embedding)`
-5. 再加少量词法分和标题分：
-   - `lexical_score`
-   - `title_score`
-6. 综合得到最终 `score`
-7. 取 `top_k` 结果
+后端在：
 
-### 9.2 返回结果结构
+- `app/services/generation_service.py`
 
-检索返回的是 `RetrievalResult` 列表，里面有：
+里把最近几轮历史消息和当前检索到的上下文一起拼进 prompt。
 
-- `document_id`
+这样模型回答时，不是只看到“当前问题”，而是能同时看到：
+
+1. 用户之前问过什么
+2. 系统之前怎么回答
+3. 当前检索出来的相关 chunk
+
+这就是现在支持多轮追问的原因。
+
+## 10. 第七步：检索
+
+检索逻辑在：
+
+- `app/services/retrieval_service.py`
+
+当前流程：
+
+1. 确保目标知识库的 chunk 已经有 embedding
+2. 对 query 生成 query embedding
+3. 读出知识库中所有 chunk
+4. 计算 query 和每个 chunk 的向量相似度
+5. 再加一点词法得分和标题得分
+6. 按最终 score 排序
+7. 取 `top_k`
+
+返回的 `RetrievalResult` 包含：
+
 - `document_name`
 - `source_url`
-- `chunk_id`
 - `chunk_index`
 - `snippet`
 - `score`
@@ -297,216 +379,102 @@
 
 其中：
 
+- `content` 用于喂给模型
 - `snippet` 用于前端显示引用
-- `content` 用于后续喂给生成模型
 
-## 10. 第七步：上下文增强与大模型回答
+## 11. 第八步：回答生成
 
-检索结果拿到之后，RAG 服务会调用：
+生成逻辑在：
 
-`generation_service.answer_question(question, results)`
+- `app/services/generation_service.py`
 
-实现文件：
+现在支持：
 
-- [generation_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/generation_service.py:1)
+- OpenAI `responses`
+- OpenAI 兼容 `chat/completions`
+- DeepSeek `chat/completions`
 
-### 10.1 当前回答模式
+生成时会把三类信息一起组装进 prompt：
 
-当前是：
+1. 最近几轮对话历史
+2. 命中的 `top K` 上下文
+3. 当前用户问题
 
-- `DeepSeek` 负责生成回答
-- 本地 hash embedding 负责检索
+这就让系统既有：
 
-这可以理解为：
+- 检索增强能力
+- 多轮对话连续性
 
-`本地向量检索 + DeepSeek 大模型生成`
+## 12. 第九步：回答区和引用区怎么改了
 
-### 10.2 Prompt 组织方式
+这次前端交互也升级了：
 
-生成前会把检索到的 top K 上下文拼成结构化 prompt，例如：
+### 12.1 回答区
 
-```text
-[Context 1]
-Page: 某页面标题
-URL: 某页面地址
-Score: 0.81
-Content: 某段正文
+- 回答区改成更像聊天产品的气泡式布局
+- 用户和助手消息分开显示
+- 助手消息支持基础富文本展示
+- 多轮会话会保存在当前浏览器会话里
 
-[Context 2]
-...
+### 12.2 引用区
 
-User question: 用户问题
-```
+- 默认折叠
+- 先显示“查看引用（N）”
+- 展开后按引用卡片展示
+- 每条引用内部再用 `details` 打开 snippet
+- 可以直接点“打开原文”
 
-### 10.3 生成接口
+这比之前“回答后直接把大段引用灌出来”更适合真实使用。
 
-当前对 DeepSeek 走的是兼容接口：
+## 13. 当前运行模式怎么判断
 
-- `POST {base_url}/chat/completions`
-
-因为当前 `.env` 里配置的是：
-
-- `AIMP_OPENAI_BASE_URL=https://api.deepseek.com`
-- `AIMP_RAG_GENERATION_MODEL=deepseek-v4-flash`
-
-如果将来换成标准 OpenAI 兼容服务，也支持切到：
-
-- `/responses`
-
-### 10.4 返回前端的数据
-
-最终返回：
-
-```json
-{
-  "knowledge_base_id": "...",
-  "question": "...",
-  "answer": "...",
-  "citations": [
-    {
-      "document_name": "...",
-      "source_url": "...",
-      "snippet": "...",
-      "score": 0.81
-    }
-  ]
-}
-```
-
-前端现在的显示方式是：
-
-1. 先显示回答正文
-2. 不自动展开引用
-3. 显示 `查看引用（N）` 按钮
-4. 点击后展开引用片段
-
-## 11. 当前运行模式
-
-当前可以通过：
+查看：
 
 `GET /api/v1/system/rag-status`
 
-查看实际运行状态。
+返回里重点看：
 
-对应文件：
+- `generation_provider`
+- `embedding_provider`
+- `embedding_mode`
+- `generation_model`
+- `embedding_model`
 
-- [system.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/api/routes/system.py:1)
+当前如果你只配置了 DeepSeek 回答而没配独立 embedding，典型状态会是：
 
-当前你这台机器上的模式是：
+```json
+{
+  "generation_provider": "deepseek",
+  "embedding_provider": "local-hash",
+  "embedding_mode": "local-hash"
+}
+```
 
-- `provider = deepseek`
-- `llm_mode = deepseek`
-- `embedding_mode = local-hash`
+## 14. 当前版本的优点
 
-这意味着：
-
-- 生成是 `DeepSeek`
-- 检索是本地向量检索
-- 还没有接入独立的远程 embedding 服务
-
-## 12. 这条链路里各模块的职责
-
-### 前端
-
-- [index.html](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/frontend/index.html:1)
-
-职责：
-
-- 收集 URL、页数上限、问题
-- 调用后端接口
-- 展示回答和引用
-
-### 路由层
-
-- [rag.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/api/routes/rag.py:1)
-
-职责：
-
-- 接收 HTTP 请求
-- 做异常转 HTTP 错误
-
-### 抓取层
-
-- [website_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/website_service.py:1)
-
-职责：
-
-- 抓网页
-- 提取标题
-- 提取正文
-- 抽取链接
-
-### 文档层
-
-- [document_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/document_service.py:1)
-
-职责：
-
-- 建文档
-- 切片
-- 更新文档状态
-
-### 向量层
-
-- [embedding_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/embedding_service.py:1)
-
-职责：
-
-- 生成 chunk embedding
-- 生成 query embedding
-- 计算向量相似度
-
-### 检索层
-
-- [retrieval_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/retrieval_service.py:1)
-
-职责：
-
-- 做 top K 检索
-- 组装 snippet 和 score
-
-### 生成层
-
-- [generation_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/generation_service.py:1)
-
-职责：
-
-- 组织上下文 prompt
-- 调用 DeepSeek / OpenAI 兼容接口
-- 输出最终回答
-
-### 编排层
-
-- [rag_service.py](/d:/Users/hzito02/IdeaProjects/codex/agent-core/services/ai-service/app/services/rag_service.py:1)
-
-职责：
-
-- 把抓取、建库、切片、向量化、检索、生成串成一条完整链路
-
-## 13. 当前实现的优点
-
-- 链路完整，已经是真正的 `RAG` 结构，不是简单规则拼接
+- 已经是完整的 RAG 链路，不是简单规则拼接
 - 支持网站多页抓取
-- 支持知识库重建
-- 支持向量持久化
-- 支持切换到远程大模型生成
+- 支持文档切片和 embedding 持久化
+- 支持 generation 和 embedding 分离配置
+- 支持多轮会话记忆
+- 前端交互已经更接近产品化
 
-## 14. 当前实现的限制
+## 15. 当前版本仍然的边界
 
-- 当前 embedding 仍是本地 hash 向量，不是正式语义 embedding
-- 切片还是定长窗口，没有做语义分段
-- 站点抓取没有做 robots、去重策略增强、反爬兼容
-- 生成前没有做 rerank
-- 没有单独的向量库，当前向量保存在 SQLite 文本字段里
+- 如果没有独立 embedding provider，检索仍是 `local-hash`
+- 切片仍然是固定窗口，不是语义切片
+- 还没有 rerank
+- 还没有真正的向量数据库，如 `pgvector` / `Milvus`
+- 抓取流程还没有异步任务和进度状态
 
-## 15. 下一步建议
+## 16. 下一步建议
 
-如果继续升级，建议按这个顺序：
+建议按这个顺序继续升级：
 
-1. 接正式 embedding 服务
-2. 换成 `pgvector` 或 `Milvus`
+1. 给 embedding 接一个真实提供方，先把 `embedding_mode` 从 `local-hash` 变成 `openai`
+2. 把当前 SQLite 文本向量存储升级到 `pgvector`
 3. 增加 rerank
-4. 优化网页正文抽取
-5. 加抓取任务状态和异步队列
+4. 做异步抓取与进度条
+5. 做知识库重抓、删除和增量更新
 
-这样整条链路就会从“可运行的 RAG”升级到“效果更稳的生产版 RAG”。
+做到这一步之后，这套网站问答能力就会从“能跑的 RAG Demo”升级到“效果更稳定的产品化 RAG”。

@@ -17,11 +17,8 @@ class EmbeddingService:
             return settings.rag_embedding_model
         return "local-hash-v1"
 
-    def is_openai_enabled(self) -> bool:
-        return settings.openai_enabled
-
     def supports_remote_embeddings(self) -> bool:
-        return self.is_openai_enabled() and "deepseek.com" not in settings.openai_base_url.lower()
+        return settings.embedding_enabled and "deepseek.com" not in settings.resolved_embedding_base_url.lower()
 
     def ensure_chunk_embeddings(
         self,
@@ -83,7 +80,7 @@ class EmbeddingService:
         return numerator / (left_norm * right_norm)
 
     def _embed_openai(self, texts: list[str]) -> list[list[float]]:
-        url = self._join_url(settings.openai_base_url, "/embeddings")
+        url = self._join_url(settings.resolved_embedding_base_url, "/embeddings")
         request = urllib.request.Request(
             url,
             data=json.dumps(
@@ -94,7 +91,7 @@ class EmbeddingService:
                 }
             ).encode("utf-8"),
             headers={
-                "Authorization": f"Bearer {settings.resolved_openai_api_key}",
+                "Authorization": f"Bearer {settings.resolved_embedding_api_key}",
                 "Content-Type": "application/json",
             },
             method="POST",

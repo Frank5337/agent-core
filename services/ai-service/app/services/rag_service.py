@@ -96,7 +96,7 @@ class RagService:
             for item in results
         ]
 
-        answer = generation_service.answer_question(payload.question, results)
+        answer = generation_service.answer_question(payload.question, results, payload.history)
 
         return RagAskResponse(
             knowledge_base_id=payload.knowledge_base_id,

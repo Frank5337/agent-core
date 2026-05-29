@@ -15,6 +15,9 @@
       --warm: #d39f34;
       --line: rgba(31, 42, 36, 0.1);
       --shadow: 0 24px 70px rgba(36, 49, 41, 0.12);
+      --answer-bg: rgba(255, 250, 240, 0.94);
+      --user-bg: rgba(29, 107, 82, 0.12);
+      --surface: rgba(255, 255, 255, 0.82);
     }
 
     * { box-sizing: border-box; }
@@ -40,9 +43,9 @@
     }
 
     .page {
-      max-width: 1440px;
+      max-width: 1460px;
       margin: 0 auto;
-      padding: 32px 20px 56px;
+      padding: 30px 20px 52px;
     }
 
     .hero,
@@ -52,14 +55,14 @@
     }
 
     .hero {
-      grid-template-columns: minmax(420px, 1fr) minmax(420px, 1fr);
+      grid-template-columns: minmax(440px, 1fr) minmax(440px, 1fr);
       align-items: stretch;
     }
 
     .workspace {
-      grid-template-columns: minmax(480px, 0.95fr) minmax(640px, 1.15fr);
-      margin-top: 22px;
+      grid-template-columns: minmax(500px, 1fr) minmax(680px, 1.15fr);
       align-items: stretch;
+      margin-top: 22px;
     }
 
     .workspace > .panel {
@@ -118,9 +121,10 @@
     .mode-grid,
     .detail-grid,
     .pages-list,
-    .citations,
     .question-box,
-    .suggestions {
+    .suggestions,
+    .composer-tools,
+    .citations {
       display: grid;
       gap: 12px;
     }
@@ -130,11 +134,17 @@
       margin-top: 24px;
     }
 
+    .mode-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 20px;
+    }
+
     .meta-card,
     .mode-card,
     .detail-item,
-    .citation,
-    .page-item {
+    .page-item,
+    .citation-card,
+    .memory-pill {
       padding: 14px 16px;
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.74);
@@ -152,15 +162,15 @@
       word-break: break-word;
     }
 
-    .mode-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin-top: 20px;
+    .mode-card small,
+    .meta-card small,
+    .muted {
+      color: var(--muted);
     }
 
-    .mode-card small,
-    .meta-card small {
-      color: var(--muted);
-      font-size: 13px;
+    #generationModel {
+      font-size: clamp(17px, 1.7vw, 21px);
+      line-height: 1.18;
     }
 
     .mode-tag {
@@ -223,7 +233,7 @@
     }
 
     textarea {
-      min-height: 150px;
+      min-height: 146px;
       resize: vertical;
       line-height: 1.7;
     }
@@ -291,31 +301,6 @@
       color: var(--muted);
     }
 
-    .citation-toggle {
-      margin-top: 12px;
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(29, 107, 82, 0.18);
-      background: rgba(29, 107, 82, 0.08);
-      color: var(--accent);
-      font-weight: 700;
-      box-shadow: none;
-    }
-
-    .citations {
-      margin-top: 12px;
-    }
-
-    /* 明确覆盖 display:grid，确保 hidden 状态下真的收起引用区。 */
-    .citations[hidden] {
-      display: none !important;
-    }
-
-    #generationModel {
-      font-size: clamp(17px, 1.7vw, 21px);
-      line-height: 1.18;
-    }
-
     .website-info {
       display: flex;
       flex-direction: column;
@@ -324,12 +309,6 @@
 
     .pages-list {
       margin-top: 14px;
-    }
-
-    .detail-item code,
-    .page-item .muted,
-    .citation .muted {
-      word-break: break-all;
     }
 
     .page-item strong {
@@ -350,7 +329,7 @@
       align-self: stretch;
       min-height: 760px;
       display: grid;
-      grid-template-rows: auto auto minmax(420px, 1fr) auto;
+      grid-template-rows: auto auto minmax(380px, 1fr) auto;
       gap: 14px;
     }
 
@@ -364,7 +343,7 @@
       flex-direction: column;
       gap: 14px;
       min-height: 420px;
-      max-height: 620px;
+      max-height: 640px;
       overflow: auto;
       padding-right: 4px;
     }
@@ -373,19 +352,45 @@
       border-radius: 18px;
       padding: 18px 20px;
       border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.82);
-      line-height: 1.75;
-      white-space: pre-wrap;
+      background: var(--surface);
       font-size: 16px;
+      line-height: 1.78;
     }
 
     .bubble.user {
-      background: rgba(29, 107, 82, 0.12);
+      background: var(--user-bg);
       border-color: rgba(29, 107, 82, 0.2);
     }
 
     .bubble.answer {
-      background: rgba(255, 250, 240, 0.94);
+      background: var(--answer-bg);
+    }
+
+    .bubble-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .bubble-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .bubble-body p {
+      color: inherit;
+      margin: 0 0 10px;
+    }
+
+    .bubble-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .bubble-body strong {
+      color: var(--ink);
     }
 
     .question-box {
@@ -393,15 +398,13 @@
       border-top: 1px solid rgba(31, 42, 36, 0.08);
     }
 
-    .composer-actions {
-      justify-content: space-between;
-    }
-
-    .qa-controls {
-      display: grid;
-      gap: 12px;
+    .composer-tools {
       grid-template-columns: 140px 1fr;
       align-items: end;
+    }
+
+    .composer-actions {
+      justify-content: space-between;
     }
 
     .hint {
@@ -409,8 +412,74 @@
       color: var(--muted);
     }
 
-    .muted {
+    .citation-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(31, 42, 36, 0.12);
+    }
+
+    .citation-toggle {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(29, 107, 82, 0.18);
+      background: rgba(29, 107, 82, 0.08);
+      color: var(--accent);
+      font-weight: 700;
+      box-shadow: none;
+    }
+
+    .citations {
+      margin-top: 14px;
+    }
+
+    .citation-card details {
+      cursor: pointer;
+    }
+
+    .citation-card summary {
+      list-style: none;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .citation-card summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .citation-snippet {
+      margin-top: 12px;
+      color: var(--ink);
+      line-height: 1.72;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .citation-source {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .memory-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .memory-pill {
+      font-size: 12px;
       color: var(--muted);
+      padding: 10px 12px;
     }
 
     @media (max-width: 1180px) {
@@ -433,7 +502,7 @@
     @media (max-width: 760px) {
       .field-grid,
       .meta,
-      .qa-controls {
+      .composer-tools {
         grid-template-columns: 1fr;
       }
 
@@ -455,8 +524,8 @@
     <section class="hero">
       <div class="panel intro">
         <div class="badge">Website RAG Studio</div>
-        <h1>输入一个网站地址，<br>把它变成可问答的知识页</h1>
-        <p>这套页面会抓取网站内容、切片入库、做向量检索，再把命中的上下文交给模型回答。你可以把它当成一个轻量的网站 RAG 工作台。</p>
+        <h1>输入一个网站地址<br>把它变成可问答的知识页</h1>
+        <p>这套页面会抓取网站正文、切片入库、做向量检索，再把命中的上下文交给模型回答。现在支持多轮问答，后一个问题可以承接前一个问题继续追问。</p>
         <div class="meta">
           <div class="meta-card">
             <small>步骤一</small>
@@ -471,7 +540,7 @@
             <strong>检索问答</strong>
           </div>
         </div>
-        <div class="mode-grid" id="modeGrid">
+        <div class="mode-grid">
           <div class="mode-card">
             <small>回答引擎</small>
             <strong id="llmMode">加载中</strong>
@@ -493,17 +562,14 @@
             <label class="label" for="websiteUrl">网站地址</label>
             <input id="websiteUrl" placeholder="example.com 或 https://example.com" />
           </div>
-
           <div class="field">
             <label class="label" for="kbName">知识库名称</label>
             <input id="kbName" placeholder="留空则自动使用域名" />
           </div>
-
           <div class="field">
             <label class="label" for="maxPages">抓取页数上限</label>
             <input id="maxPages" type="number" min="1" max="20" value="5" />
           </div>
-
           <div class="field full">
             <label class="toggle">
               <input id="sameDomainOnly" type="checkbox" checked />
@@ -511,13 +577,11 @@
             </label>
           </div>
         </div>
-
         <div class="actions">
           <button id="ingestButton" class="primary">抓取并入库</button>
           <button id="refreshModeButton" class="ghost">刷新模式状态</button>
           <button id="clearButton" class="secondary">清空当前会话</button>
         </div>
-
         <div id="ingestStatus" class="status"></div>
       </div>
     </section>
@@ -525,7 +589,7 @@
     <section class="workspace">
       <div class="panel website-info">
         <h2>网站内容</h2>
-        <p class="muted">导入成功后，这里会显示当前知识库、抓取页数和页面列表。页面链接可以直接点开核对原文。</p>
+        <p class="muted">导入成功后，这里会显示当前知识库、抓取页数和页面列表。你可以直接点开原始页面核对内容。</p>
         <div id="details" class="detail-grid">
           <div class="detail-item">还没有导入网站内容。</div>
         </div>
@@ -535,32 +599,34 @@
       <div class="panel qa">
         <div class="qa-header">
           <h2>问答界面</h2>
-          <p class="muted">这里更适合连续追问。你可以直接问“这个网站主要介绍什么”“有哪些栏目”“某个页面提到了什么”。</p>
+          <p class="muted">现在支持多轮追问。比如先问“这个网站主要介绍什么”，再接着问“它提到的 Java 内容有哪些”，系统会把最近几轮上下文一起带给模型。</p>
+          <div class="memory-bar">
+            <div class="memory-pill">会话记忆：保留最近 8 条历史消息</div>
+            <div class="memory-pill">引用展示：默认折叠，按需展开</div>
+          </div>
         </div>
 
         <div class="suggestions" id="suggestions">
           <button class="ghost" data-question="总结这个网站的主要内容">总结这个网站的主要内容</button>
           <button class="ghost" data-question="这个网站有哪些栏目？">这个网站有哪些栏目？</button>
-          <button class="ghost" data-question="这个网站最值得关注的页面有哪些？">这个网站最值得关注的页面有哪些？</button>
+          <button class="ghost" data-question="它提到了哪些技术主题？">它提到了哪些技术主题？</button>
         </div>
 
-        <div id="chatHistory" class="chat-history">
-          <div class="bubble answer">先在左侧输入网站地址并完成导入，然后这里就可以开始问答。</div>
-        </div>
+        <div id="chatHistory" class="chat-history"></div>
 
         <div class="question-box">
-          <div class="qa-controls">
+          <div class="composer-tools">
             <div class="field">
               <label class="label" for="topKInput">检索条数 TopK</label>
               <input id="topKInput" type="number" min="1" max="8" value="4" />
             </div>
             <div class="field">
               <label class="label" for="questionInput">问题</label>
-              <textarea id="questionInput" placeholder="例如：这个网站主要介绍了什么？"></textarea>
+              <textarea id="questionInput" placeholder="例如：这个网站主要介绍了什么？如果我再追问一个更细的问题，它还能接上吗？"></textarea>
             </div>
           </div>
           <div class="composer-actions">
-            <span class="hint">建议尽量具体，比如“这个网站有没有美剧相关内容”“它提到了哪些技术主题”。</span>
+            <span class="hint">建议尽量具体。比如“它有没有美剧相关内容”“它提到的 Java 页面主要讲了什么”。</span>
             <button id="askButton" class="primary" disabled>开始提问</button>
           </div>
           <div id="askStatus" class="status"></div>
@@ -570,10 +636,13 @@
   </div>
 
   <script>
+    const STORAGE_KEY = "website-rag-studio-state";
+
     const state = {
       knowledgeBaseId: null,
       pages: [],
-      ragStatus: null
+      ragStatus: null,
+      chatMessages: []
     };
 
     const websiteUrlInput = document.getElementById("websiteUrl");
@@ -619,6 +688,51 @@
       return `https://${value}`;
     }
 
+    function escapeHtml(text) {
+      return String(text || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function renderAnswerHtml(text) {
+      const safe = escapeHtml(text);
+      const withBold = safe.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      const blocks = withBold.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
+      if (!blocks.length) {
+        return "<p></p>";
+      }
+      return blocks
+        .map((part) => `<p>${part.replace(/\n/g, "<br>")}</p>`)
+        .join("");
+    }
+
+    function saveState() {
+      const snapshot = {
+        knowledgeBaseId: state.knowledgeBaseId,
+        pages: state.pages,
+        chatMessages: state.chatMessages
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    }
+
+    function loadSavedState() {
+      try {
+        const raw = sessionStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          return;
+        }
+        const payload = JSON.parse(raw);
+        state.knowledgeBaseId = payload.knowledgeBaseId || null;
+        state.pages = Array.isArray(payload.pages) ? payload.pages : [];
+        state.chatMessages = Array.isArray(payload.chatMessages) ? payload.chatMessages : [];
+      } catch (error) {
+        sessionStorage.removeItem(STORAGE_KEY);
+      }
+    }
+
     async function loadRagStatus() {
       try {
         const response = await fetch("/api/v1/system/rag-status");
@@ -636,12 +750,12 @@
 
     function renderDetails(payload) {
       const ragMode = state.ragStatus
-        ? `<span class="mode-tag">${state.ragStatus.provider} / ${state.ragStatus.embedding_mode}</span>`
+        ? `<span class="mode-tag">${state.ragStatus.generation_provider} / ${state.ragStatus.embedding_mode}</span>`
         : "";
 
       details.innerHTML = `
-        <div class="detail-item"><span class="muted">知识库</span><br><strong>${payload.knowledge_base_name}</strong></div>
-        <div class="detail-item"><span class="muted">知识库 ID</span><br><code>${payload.knowledge_base_id}</code></div>
+        <div class="detail-item"><span class="muted">知识库</span><br><strong>${escapeHtml(payload.knowledge_base_name)}</strong></div>
+        <div class="detail-item"><span class="muted">知识库 ID</span><br><code>${escapeHtml(payload.knowledge_base_id)}</code></div>
         <div class="detail-item"><span class="muted">抓取页面数</span><br><strong>${payload.document_count}</strong></div>
         <div class="detail-item"><span class="muted">总切片数</span><br><strong>${payload.total_chunk_count}</strong></div>
         <div class="detail-item"><span class="muted">当前 RAG 模式</span><br>${ragMode || "<strong>未获取</strong>"}</div>
@@ -656,63 +770,115 @@
 
       pagesList.innerHTML = pages.map((item, index) => `
         <div class="page-item">
-          <strong>页面 ${index + 1}：</strong>${item.document_name}<br>
-          <span class="muted">${item.source_url}</span><br>
+          <strong>页面 ${index + 1}：</strong>${escapeHtml(item.document_name)}<br>
+          <span class="muted">${escapeHtml(item.source_url)}</span><br>
           <span class="muted">切片数：${item.chunk_count}</span><br>
-          <a class="page-link" href="${item.source_url}" target="_blank" rel="noreferrer">打开原页面</a>
+          <a class="page-link" href="${escapeHtml(item.source_url)}" target="_blank" rel="noreferrer">打开原页面</a>
         </div>
       `).join("");
     }
 
-    function appendBubble(type, text, citations = []) {
+    function buildCitationCards(citations) {
+      return citations.map((item, index) => `
+        <div class="citation-card">
+          <details>
+            <summary>
+              <span>引用 ${index + 1} · ${escapeHtml(item.document_name)}</span>
+              <span class="muted">score ${item.score}</span>
+            </summary>
+            <div class="citation-snippet">${escapeHtml(item.snippet)}</div>
+            <a class="citation-source" href="${escapeHtml(item.source_url || "#")}" target="_blank" rel="noreferrer">
+              打开原文
+            </a>
+          </details>
+        </div>
+      `).join("");
+    }
+
+    function appendBubble(message) {
       const wrapper = document.createElement("div");
-      wrapper.className = `bubble ${type}`;
+      wrapper.className = `bubble ${message.role === "user" ? "user" : "answer"}`;
+
+      const meta = document.createElement("div");
+      meta.className = "bubble-meta";
+      meta.innerHTML = `
+        <span>${message.role === "user" ? "我" : "RAG 助手"}</span>
+        <span>${message.citations ? `引用 ${message.citations.length} 条` : ""}</span>
+      `;
+      wrapper.appendChild(meta);
 
       const body = document.createElement("div");
       body.className = "bubble-body";
-      body.textContent = text;
+      if (message.role === "assistant") {
+        body.innerHTML = renderAnswerHtml(message.content);
+      } else {
+        body.textContent = message.content;
+      }
       wrapper.appendChild(body);
 
-      if (citations.length > 0) {
-        const toggleButton = document.createElement("button");
-        toggleButton.type = "button";
-        toggleButton.className = "citation-toggle";
-        toggleButton.textContent = `查看引用（${citations.length}）`;
+      if (message.role === "assistant" && Array.isArray(message.citations) && message.citations.length > 0) {
+        const summary = document.createElement("div");
+        summary.className = "citation-summary";
 
-        const citationsEl = document.createElement("div");
-        citationsEl.className = "citations";
-        citationsEl.hidden = true;
+        const summaryText = document.createElement("span");
+        summaryText.className = "hint";
+        summaryText.textContent = "回答已附带检索命中的页面证据，按需展开即可。";
 
-        citations.forEach((item, index) => {
-          const citation = document.createElement("div");
-          citation.className = "citation";
-          citation.innerHTML = `
-            <strong>引用 ${index + 1}</strong><br>
-            ${item.document_name} · chunk ${item.chunk_index} · score ${item.score}<br>
-            ${item.snippet}<br>
-            <a href="${item.source_url || "#"}" target="_blank" rel="noreferrer">${item.source_url || ""}</a>
-          `;
-          citationsEl.appendChild(citation);
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "citation-toggle";
+        toggle.textContent = `查看引用（${message.citations.length}）`;
+
+        const citations = document.createElement("div");
+        citations.className = "citations";
+        citations.style.display = "none";
+        citations.innerHTML = buildCitationCards(message.citations);
+
+        toggle.addEventListener("click", () => {
+          const open = citations.style.display !== "none";
+          citations.style.display = open ? "none" : "grid";
+          toggle.textContent = open
+            ? `查看引用（${message.citations.length}）`
+            : `收起引用（${message.citations.length}）`;
         });
 
-        toggleButton.addEventListener("click", () => {
-          const willShow = citationsEl.hidden;
-          citationsEl.hidden = !willShow;
-          toggleButton.textContent = willShow
-            ? `收起引用（${citations.length}）`
-            : `查看引用（${citations.length}）`;
-        });
-
-        wrapper.appendChild(toggleButton);
-        wrapper.appendChild(citationsEl);
+        summary.appendChild(summaryText);
+        summary.appendChild(toggle);
+        wrapper.appendChild(summary);
+        wrapper.appendChild(citations);
       }
 
       chatHistory.appendChild(wrapper);
       chatHistory.scrollTop = chatHistory.scrollHeight;
     }
 
-    function resetChat() {
-      chatHistory.innerHTML = '<div class="bubble answer"><div class="bubble-body">先在左侧输入网站地址并完成导入，然后这里就可以开始问答。</div></div>';
+    function renderChat() {
+      chatHistory.innerHTML = "";
+      if (!state.chatMessages.length) {
+        appendBubble({
+          role: "assistant",
+          content: "先在左侧输入网站地址并完成导入，然后这里就可以开始问答。你也可以连续追问，我会带上最近几轮上下文一起回答。"
+        });
+        return;
+      }
+
+      state.chatMessages.forEach((message) => appendBubble(message));
+    }
+
+    function getHistoryForRequest() {
+      return state.chatMessages
+        .filter((item) => item.role === "user" || item.role === "assistant")
+        .slice(-8)
+        .map((item) => ({
+          role: item.role === "assistant" ? "assistant" : "user",
+          content: item.content
+        }));
+    }
+
+    function resetConversation() {
+      state.chatMessages = [];
+      renderChat();
+      saveState();
     }
 
     suggestions.addEventListener("click", (event) => {
@@ -743,7 +909,6 @@
       }
 
       websiteUrlInput.value = url;
-
       ingestButton.disabled = true;
       setStatus(ingestStatus, "正在抓取网站并构建知识库，请稍等...");
 
@@ -770,15 +935,17 @@
         renderDetails(payload);
         renderPages(state.pages);
         askButton.disabled = false;
-        resetChat();
+        resetConversation();
+        state.chatMessages.push({
+          role: "assistant",
+          content: `网站导入成功，现在你可以开始提问了。\n\n当前知识库：${payload.knowledge_base_name}\n抓取页面：${payload.document_count}\n总切片：${payload.total_chunk_count}`
+        });
+        renderChat();
+        saveState();
 
         setStatus(
           ingestStatus,
           `导入成功，已抓取 ${payload.document_count} 个页面，共生成 ${payload.total_chunk_count} 个切片。`
-        );
-        appendBubble(
-          "answer",
-          `网站导入成功，现在你可以开始提问了。\n\n当前知识库：${payload.knowledge_base_name}\n抓取页面：${payload.document_count}`
         );
       } catch (error) {
         setStatus(ingestStatus, error.message || "导入失败");
@@ -798,9 +965,13 @@
         return;
       }
 
+      const userMessage = { role: "user", content: question };
+      state.chatMessages.push(userMessage);
+      renderChat();
+      saveState();
+
       askButton.disabled = true;
       setStatus(askStatus, "正在检索网站内容并生成回答...");
-      appendBubble("user", question);
 
       try {
         const response = await fetch("/api/v1/rag/ask", {
@@ -809,19 +980,32 @@
           body: JSON.stringify({
             knowledge_base_id: state.knowledgeBaseId,
             question,
-            top_k: safeTopK()
+            top_k: safeTopK(),
+            history: getHistoryForRequest().slice(0, -1)
           })
         });
+
         const payload = await response.json();
         if (!response.ok) {
           throw new Error(payload.detail || "问答失败");
         }
 
-        appendBubble("answer", payload.answer, payload.citations || []);
+        state.chatMessages.push({
+          role: "assistant",
+          content: payload.answer,
+          citations: payload.citations || []
+        });
         questionInput.value = "";
+        renderChat();
+        saveState();
         setStatus(askStatus, "回答完成。");
       } catch (error) {
-        appendBubble("answer", `处理失败：${error.message || "问答失败"}`);
+        state.chatMessages.push({
+          role: "assistant",
+          content: `处理失败：${error.message || "问答失败"}`
+        });
+        renderChat();
+        saveState();
         setStatus(askStatus, error.message || "问答失败");
       } finally {
         askButton.disabled = false;
@@ -831,6 +1015,7 @@
     clearButton.addEventListener("click", () => {
       state.knowledgeBaseId = null;
       state.pages = [];
+      state.chatMessages = [];
       websiteUrlInput.value = "";
       kbNameInput.value = "";
       maxPagesInput.value = "5";
@@ -842,9 +1027,20 @@
       setStatus(askStatus, "");
       details.innerHTML = '<div class="detail-item">还没有导入网站内容。</div>';
       pagesList.innerHTML = "";
-      resetChat();
+      renderChat();
+      saveState();
     });
 
+    loadSavedState();
+    renderChat();
+    if (state.pages.length) {
+      renderPages(state.pages);
+      details.innerHTML = `
+        <div class="detail-item"><span class="muted">当前状态</span><br><strong>已恢复上一次会话</strong></div>
+        <div class="detail-item"><span class="muted">已缓存页面数</span><br><strong>${state.pages.length}</strong></div>
+      `;
+      askButton.disabled = !state.knowledgeBaseId;
+    }
     loadRagStatus();
   </script>
 </body>

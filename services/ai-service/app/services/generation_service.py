@@ -3,28 +3,45 @@ import urllib.error
 import urllib.request
 
 from app.core.config import settings
+from app.schemas.rag import RagMessage
 from app.services.chat_service import chat_service
 from app.services.retrieval_service import RetrievalResult
 
 
 class GenerationService:
-    def answer_question(self, question: str, contexts: list[RetrievalResult]) -> str:
+    def answer_question(
+        self,
+        question: str,
+        contexts: list[RetrievalResult],
+        history: list[RagMessage] | None = None,
+    ) -> str:
         if not contexts:
-            return "没有检索到可用于回答的问题上下文。你可以换个问法，或者先重新抓取网站内容。"
+            return "没有检索到可用于回答的上下文。你可以换个问法，或者先重新抓取网站内容。"
 
-        if settings.openai_enabled:
-            return self._answer_with_remote_model(question, contexts)
+        messages = history or []
+        if settings.generation_enabled:
+            return self._answer_with_remote_model(question, contexts, messages)
 
         return chat_service.generate_rag_answer(question, contexts)
 
-    def _answer_with_remote_model(self, question: str, contexts: list[RetrievalResult]) -> str:
+    def _answer_with_remote_model(
+        self,
+        question: str,
+        contexts: list[RetrievalResult],
+        history: list[RagMessage],
+    ) -> str:
         if self._is_deepseek():
-            return self._answer_with_chat_completions(question, contexts)
-        return self._answer_with_responses(question, contexts)
+            return self._answer_with_chat_completions(question, contexts, history)
+        return self._answer_with_responses(question, contexts, history)
 
-    def _answer_with_responses(self, question: str, contexts: list[RetrievalResult]) -> str:
-        prompt = self._build_prompt(question, contexts)
-        url = self._join_url(settings.openai_base_url, "/responses")
+    def _answer_with_responses(
+        self,
+        question: str,
+        contexts: list[RetrievalResult],
+        history: list[RagMessage],
+    ) -> str:
+        prompt = self._build_prompt(question, contexts, history)
+        url = self._join_url(settings.resolved_generation_base_url, "/responses")
         request = urllib.request.Request(
             url,
             data=json.dumps(
@@ -45,9 +62,14 @@ class GenerationService:
 
         return chat_service.generate_rag_answer(question, contexts)
 
-    def _answer_with_chat_completions(self, question: str, contexts: list[RetrievalResult]) -> str:
-        prompt = self._build_prompt(question, contexts)
-        url = self._join_url(settings.openai_base_url, "/chat/completions")
+    def _answer_with_chat_completions(
+        self,
+        question: str,
+        contexts: list[RetrievalResult],
+        history: list[RagMessage],
+    ) -> str:
+        prompt = self._build_prompt(question, contexts, history)
+        url = self._join_url(settings.resolved_generation_base_url, "/chat/completions")
         request = urllib.request.Request(
             url,
             data=json.dumps(
@@ -82,7 +104,12 @@ class GenerationService:
 
         return chat_service.generate_rag_answer(question, contexts)
 
-    def _build_prompt(self, question: str, contexts: list[RetrievalResult]) -> str:
+    def _build_prompt(
+        self,
+        question: str,
+        contexts: list[RetrievalResult],
+        history: list[RagMessage],
+    ) -> str:
         context_blocks: list[str] = []
         for index, item in enumerate(contexts[: settings.rag_retrieval_top_k], start=1):
             context_blocks.append(
@@ -97,9 +124,16 @@ class GenerationService:
                 )
             )
 
+        history_blocks: list[str] = []
+        for item in history[-settings.rag_history_messages :]:
+            role = "User" if item.role == "user" else "Assistant"
+            history_blocks.append(f"{role}: {item.content}")
+
         return "\n\n".join(
             [
                 "Use the retrieved contexts below to answer the user question.",
+                "If the previous conversation is relevant, keep the answer consistent with it.",
+                "\n".join(history_blocks) if history_blocks else "Conversation history: (none)",
                 "\n\n".join(context_blocks),
                 f"User question: {question}",
             ]
@@ -140,12 +174,12 @@ class GenerationService:
 
     def _headers(self) -> dict[str, str]:
         return {
-            "Authorization": f"Bearer {settings.resolved_openai_api_key}",
+            "Authorization": f"Bearer {settings.resolved_generation_api_key}",
             "Content-Type": "application/json",
         }
 
     def _is_deepseek(self) -> bool:
-        return "deepseek.com" in settings.openai_base_url.lower()
+        return "deepseek.com" in settings.resolved_generation_base_url.lower()
 
     def _join_url(self, base: str, path: str) -> str:
         return base.rstrip("/") + path

@@ -28,10 +28,16 @@ class WebsiteIngestResponse(BaseModel):
     pages: list[WebsiteIngestedPage]
 
 
+class RagMessage(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(min_length=1, max_length=4000)
+
+
 class RagAskRequest(BaseModel):
     knowledge_base_id: UUID
     question: str = Field(min_length=1, max_length=4000)
     top_k: int = Field(default=3, ge=1, le=8)
+    history: list[RagMessage] = Field(default_factory=list, max_length=20)
 
 
 class RagCitation(BaseModel):

@@ -11,9 +11,14 @@ class Settings(BaseSettings):
 
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
+    embedding_api_key: str = ""
+    embedding_base_url: str = ""
+    generation_api_key: str = ""
+    generation_base_url: str = ""
     rag_embedding_model: str = "text-embedding-3-small"
     rag_generation_model: str = "gpt-4.1-mini"
     rag_retrieval_top_k: int = 4
+    rag_history_messages: int = 8
 
     model_config = SettingsConfigDict(
         env_prefix="AIMP_",
@@ -28,6 +33,30 @@ class Settings(BaseSettings):
     @property
     def openai_enabled(self) -> bool:
         return bool(self.resolved_openai_api_key)
+
+    @property
+    def resolved_embedding_api_key(self) -> str:
+        return self.embedding_api_key.strip() or self.resolved_openai_api_key
+
+    @property
+    def resolved_generation_api_key(self) -> str:
+        return self.generation_api_key.strip() or self.resolved_openai_api_key
+
+    @property
+    def resolved_embedding_base_url(self) -> str:
+        return self.embedding_base_url.strip() or self.openai_base_url
+
+    @property
+    def resolved_generation_base_url(self) -> str:
+        return self.generation_base_url.strip() or self.openai_base_url
+
+    @property
+    def embedding_enabled(self) -> bool:
+        return bool(self.resolved_embedding_api_key)
+
+    @property
+    def generation_enabled(self) -> bool:
+        return bool(self.resolved_generation_api_key)
 
 
 settings = Settings()
